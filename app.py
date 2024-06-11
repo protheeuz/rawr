@@ -26,7 +26,7 @@ app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'db_puskesmas'
 
 # Konfigurasi SendGrid
-app.config['SENDGRID_API_KEY'] = 'YOUR_SENDGRID_API'
+app.config['SENDGRID_API_KEY'] = 'YOUR_SENDGRID_APIs'
 app.config['SENDGRID_DEFAULT_FROM'] = 'matimatech@gmail.com'
 app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
 app.config['MAIL_USERNAME'] = 'apikey'
