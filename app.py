@@ -17,7 +17,9 @@ import pickle
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(8)
-app.config['UPLOAD_FOLDER'] = 'static/assets/img/users'
+app.config['UPLOAD_FOLDER_USERS'] = 'static/assets/img/users'
+app.config['UPLOAD_FOLDER_ADMINS'] = 'static/assets/img/admins'
+
 
 # Konfigurasi MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -26,7 +28,7 @@ app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'db_puskesmas'
 
 # Konfigurasi SendGrid
-app.config['SENDGRID_API_KEY'] = 'YOUR_SENDGRID_APIs'
+app.config['SENDGRID_API_KEY'] = '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'
 app.config['SENDGRID_DEFAULT_FROM'] = 'matimatech@gmail.com'
 app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
 app.config['MAIL_USERNAME'] = 'apikey'
@@ -35,11 +37,23 @@ mysql = MySQL(app)
 sg = SendGrid(app)
 
 # Muat model dan transformer RFE
-with open('./models/rfe_transformer.pkl', 'rb') as transformer_file:
-    rfe_transformer = pickle.load(transformer_file)
+with open('./models/rf_model_rfe.pkl', 'rb') as model_file:
+    rf_model_rfe = pickle.load(model_file)
 
-with open('./models/svm_model_rfe.pkl', 'rb') as model_file:
-    svm_model_rfe = pickle.load(model_file)
+with open('./models/rfe_rf_transformer.pkl', 'rb') as transformer_file:
+    rfe_rf_transformer = pickle.load(transformer_file)
+    
+def load_model_and_transformer():
+    global svm_model_rfe, rfe_transformer
+    try:
+        with open('./models/svm_model_rfe.pkl', 'rb') as f:
+            svm_model_rfe = pickle.load(f)
+        with open('./models/rfe_transformer.pkl', 'rb') as f:
+            rfe_transformer = pickle.load(f)
+    except Exception as e:
+        logging.error(f"Error loading model or transformer: {e}")
+
+load_model_and_transformer()
 
 # Fungsi untuk membuat koneksi ke database
 def get_db():
@@ -173,6 +187,20 @@ def dashboard():
         flash('Anda tidak memiliki hak akses.', 'error')
         return redirect(url_for('login'))
 
+    db, cur = get_db()
+    cur.execute("SELECT * FROM patients")
+    patients = cur.fetchall()
+    db.close()
+
+    patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
+    
+    # Mapping jenis_kelamin
+    patients_df['jenis_kelamin'] = patients_df['jenis_kelamin'].map({0: 'Laki-laki', 1: 'Perempuan'})
+
+    total_patients = len(patients_df)
+    total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
+    total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
+
     if user_type == 'admin':
         admin_email = session.get('user_email')
 
@@ -189,22 +217,11 @@ def dashboard():
         if admin_profile_picture:
             admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
 
-        db, cur = get_db()
-        cur.execute("SELECT * FROM patients")
-        patients = cur.fetchall()
-        db.close()
-
-        patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
-
-        total_patients = len(patients_df)
-        total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
-        total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
-
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
                                total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
                                admin_name=admin_name, admin_profile_picture=admin_profile_picture, 
                                admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, 
-                               admin_profil_pekerjaan=admin_profil_pekerjaan)
+                               admin_profil_pekerjaan=admin_profil_pekerjaan, patients=patients_df.to_dict(orient='records'))
     elif user_type == 'pengunjung':
         user_email = session.get('user_email')
 
@@ -220,21 +237,11 @@ def dashboard():
         if user_profile_picture:
             user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
 
-        db, cur = get_db()
-        cur.execute("SELECT * FROM patients")
-        patients = cur.fetchall()
-        db.close()
-
-        patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
-
-        total_patients = len(patients_df)
-        total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
-        total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
-
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
                                total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
                                user_name=user_name, user_profile_picture=user_profile_picture, 
-                               user_email=user_email, user_qualification=user_qualification)
+                               user_email=user_email, user_qualification=user_qualification, patients=patients_df.to_dict(orient='records'))
+
 
 @app.route('/admin-register', methods=['GET', 'POST'])
 def admin_register():
@@ -356,41 +363,38 @@ def verify():
 
 @app.route('/admin-profile-settings', methods=['GET', 'POST'])
 def admin_profile_settings():
-    admin_email = session.get('user_email')
+    user_email = session.get('user_email')
 
-    if not admin_email:
+    if not user_email:
         flash('Email tidak tersedia di session', 'error')
         return redirect(url_for('login'))
 
     if request.method == 'GET':
-        admin_name = session.get('user_name')
-        admin_kualifikasi = session.get('user_qualification')
-        admin_profil_pekerjaan = session.get('user_job')
-        admin_profile_picture = session.get('user_profile_picture')
+        user_name = session.get('user_name')
+        user_qualification = session.get('user_qualification')
+        user_profile_picture = session.get('user_profile_picture')
         result = request.args.get('result')
-        return render_template('admin-profile-settings.html', admin_name=admin_name, admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, admin_profil_pekerjaan=admin_profil_pekerjaan, admin_profile_picture=admin_profile_picture, result=result)
+        return render_template('admin-profile-settings.html', admin_name=user_name, admin_email=user_email, admin_kualifikasi=user_qualification, admin_profile_picture=user_profile_picture, result=result)
 
     elif request.method == 'POST':
         name = request.form['name']
         kualifikasi = request.form['qualification']
-        profil_pekerjaan = request.form['job']
         profile_picture = None
 
         if 'photo' in request.files:
             photo = request.files['photo']
             if photo.filename != '':
-                filename = secure_filename(admin_email + os.path.splitext(photo.filename)[1])
-                photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                filename = secure_filename(user_email + os.path.splitext(photo.filename)[1])
+                photo.save(os.path.join(app.config['UPLOAD_FOLDER_ADMINS'], filename))
                 profile_picture = filename
-
         try:
             db, cur = get_db()
-            update_query = "UPDATE admins SET name = %s, kualifikasi = %s, profil_pekerjaan = %s WHERE email = %s"
-            cur.execute(update_query, (name, kualifikasi, profil_pekerjaan, admin_email))
+            update_query = "UPDATE users SET name = %s, qualification = %s WHERE email = %s"
+            cur.execute(update_query, (name, kualifikasi, user_email))
             db.commit()
 
             if profile_picture:
-                cur.execute("UPDATE admins SET profile_picture = %s WHERE email = %s", (profile_picture, admin_email))
+                cur.execute("UPDATE users SET profile_picture = %s WHERE email = %s", (profile_picture, user_email))
                 db.commit()
                 session['user_profile_picture'] = profile_picture
 
@@ -402,9 +406,12 @@ def admin_profile_settings():
 
         session['user_name'] = name
         session['user_qualification'] = kualifikasi
-        session['user_job'] = profil_pekerjaan
 
         return redirect(url_for('admin_profile_settings'))
+
+
+
+
 
 @app.route('/user-profile-settings', methods=['GET', 'POST'])
 def user_profile_settings():
@@ -430,7 +437,7 @@ def user_profile_settings():
             photo = request.files['photo']
             if photo.filename != '':
                 filename = secure_filename(user_email + os.path.splitext(photo.filename)[1])
-                photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                photo.save(os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename))
                 profile_picture = filename
 
         try:
@@ -455,6 +462,7 @@ def user_profile_settings():
 
         return redirect(url_for('user_profile_settings'))
 
+
 @app.route('/classify', methods=['GET', 'POST'])
 def classify():
     if 'logged_in' not in session:
@@ -466,7 +474,7 @@ def classify():
     user_profile_picture = session.get('user_profile_picture')
 
     if request.method == 'GET':
-        return render_template('classify.html', user_type=user_type, user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture)
+        return render_template('classify.html', user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 
     elif request.method == 'POST':
         data = request.form
@@ -474,24 +482,41 @@ def classify():
                        convert_to_float(data['leucocyte']), convert_to_float(data['thrombocyte']), convert_to_float(data['mch']), 
                        convert_to_float(data['mchc']), convert_to_float(data['mcv']), int(data['umur']), int(data['jenis_kelamin'])]]
 
-        transformed_data = rfe_transformer.transform(input_data)
-        prediction = svm_model_rfe.predict(transformed_data)[0]
+        logging.debug(f"Data Input for Prediction: {input_data}")
+        
+        try:
+            transformed_data = rfe_transformer.transform(input_data)
+            logging.debug(f"Transformed Data: {transformed_data}")
+        except Exception as e:
+            logging.error(f"Error during data transformation: {e}")
+            flash('Terjadi kesalahan saat memproses data.', 'error')
+            return redirect(url_for('classify'))
+
+        try:
+            prediction = svm_model_rfe.predict(transformed_data)[0]
+            logging.debug(f"Prediction Result: {prediction}")
+        except Exception as e:
+            logging.error(f"Error during model prediction: {e}")
+            flash('Terjadi kesalahan saat memproses prediksi.', 'error')
+            return redirect(url_for('classify'))
 
         result = "Rujukan Rumah Sakit" if prediction == 1 else "Rawat Jalan"
 
-        # Simpan data pasien ke dalam database MySQL
         db, cur = get_db()
-        cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
-                    (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'], 
-                     data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], result))
-        db.commit()
-        db.close()
+        try:
+            cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+                        (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'], 
+                         data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], result))
+            db.commit()
+        except Exception as e:
+            logging.error(f"Error during database insertion: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
-        return render_template('classify.html', result=result, user_type=user_type, user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture)
+        return render_template('classify.html', result=result, user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 
     return render_template('classify.html')
-
-
 
 @app.route('/logout')
 def logout():
