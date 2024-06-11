@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
+    <title>Verifikasi - Sistem Rekomendasi Perawatan - Puskesmas Pulogadung</title>
+    
+    <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon">
+    
+    <link rel="stylesheet" href="../static/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/assets/css/custom.css">
+</head>
+<body>
+    <div class="main-wrapper">
+        <header class="header">
+            <div class="container">
+                <nav class="navbar navbar-expand-lg header-nav">
+                    <div class="navbar-header">
+                        <a href="/" class="navbar-brand logo">
+                            <img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo">
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <div class="login-content-info" style="padding-bottom:140px; padding-top:180px">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="account-content">
+                            <div class="account-info">
+                                <div class="login-back">
+                                    <a href="/"><i class="fa-solid fa-arrow-left-long"></i> Kembali</a>
+                                </div>
+                                <div class="login-title">
+                                    <h3>Verifikasi Email</h3>
+                                </div>
+                                <form action="{{ url_for('verify') }}" method="POST">
+                                    <div class="form-group">
+                                        <label for="verification_code">Masukkan Kode Verifikasi:</label>
+                                        <div class="d-flex">
+                                            <input type="text" name="code1" maxlength="1" class="form-control mr-1" required>
+                                            <input type="text" name="code2" maxlength="1" class="form-control mr-1" required>
+                                            <input type="text" name="code3" maxlength="1" class="form-control mr-1" required>
+                                            <input type="text" name="code4" maxlength="1" class="form-control mr-1" required>
+                                            <input type="text" name="code5" maxlength="1" class="form-control mr-1" required>
+                                            <input type="text" name="code6" maxlength="1" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-block">Verifikasi</button>
+                                </form>
+
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                        <div class="flashes mt-3">
+                                            {% for category, message in messages %}
+                                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer footer-one">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-3 col-md-4">
+                        <div class="footer-widget footer-about">
+                            <a href="/"><div class="footer-logo">
+                                <img src="../static/assets/img/logo.png" alt="logo">
+                            </div></a>
+                            <div class="footer-about-content">
+                                <p>Puskesmas Kecamatan Pulogadung ialah Puskesmas pembina tingkat Kecamatan Pulogadung dan merupakan unit pelaksana teknis kesehatan di bawah supervisi Suku Dinas Kesehatan Jakarta Timur.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-5">
+                        <div class="footer-widget footer-contact">
+                            <h2 class="footer-title">Kontak Kami</h2>
+                            <div class="footer-contact-info">
+                                <div class="footer-address">
+                                    <p><i class="feather-map-pin"></i> Pulogadung, Jakarta</p>
+                                </div>
+                                <div class="footer-address">
+                                    <p><i class="feather-phone-call"></i> +62 21489-0519</p>
+                                </div>
+                                <div class="footer-address mb-0">
+                                    <p><i class="feather-mail"></i> puskesmas.pulogadung@jakarta.go.id</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <script src="../static/assets/js/jquery-3.6.4.min.js"></script>
+    <script src="../static/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/assets/js/script.js"></script>
+</body>
+</html>

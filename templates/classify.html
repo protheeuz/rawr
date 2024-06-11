@@ -1,278 +1,268 @@
-<html lang="en" style="transform: none;" class="fontawesome-i2svg-active fontawesome-i2svg-complete"><head>
-    <meta charset="utf-8">
-    <title>Admin Setting - Puskesmas Pulogadung</title>
-    <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
-    
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
-    
-    <link rel="stylesheet" href="../static/assets/css/bootstrap.min.css">
-    
-    <link rel="stylesheet" href="../static/assets/plugins/fontawesome/css/fontawesome.min.css">
-    <link rel="stylesheet" href="../static/assets/plugins/fontawesome/css/all.min.css">
-    
-    <link rel="stylesheet" href="../static/assets/css/feather.css">
-    
-    <link rel="stylesheet" href="../static/assets/css/custom.css">
-    <script>
-      function previewImage(event) {
-      var reader = new FileReader();
-      reader.onload = function() {
-        var output = document.getElementById('preview-img');
-        output.src = reader.result;
-      };
-      reader.readAsDataURL(event.target.files[0]);
-    }
-    
-    </script>
-    <style id="theia-sticky-sidebar-stylesheet-TSS">.theiaStickySidebar:after {content: ""; display: table; clear: both;}</style>
-    <style type="text/css">@font-face { font-family: Roboto; src: url("chrome-extension://mcgbeeipkmelnpldkobichboakdfaeon/css/Roboto-Regular.ttf"); }</style>
+<!DOCTYPE html>
+<html lang="en" style="transform: none" class="fontawesome-i2svg-active fontawesome-i2svg-complete">
+<head>
+    <meta charset="utf-8" />
+    <title>Classify - Puskesmas Pulogadung</title>
+    <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <link rel="stylesheet" href="../static/assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../static/assets/plugins/fontawesome/css/fontawesome.min.css" />
+    <link rel="stylesheet" href="../static/assets/plugins/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="../static/assets/css/feather.css" />
+    <link rel="stylesheet" href="../static/assets/css/custom.css" />
 </head>
-<body style="transform: none;">
-
-<div class="main-wrapper" style="transform: none;">
-
-<header class="header header-fixed header-one header-space">
-<div class="container">
-<nav class="navbar navbar-expand-lg header-nav">
-<div class="navbar-header">
-<a id="mobile_btn" href="javascript:void(0);">
-<span class="bar-icon">
-<span></span>
-<span></span>
-<span></span>
-</span>
-</a>
-<a href="/index" class="navbar-brand logo">
-<img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo">
-</a>
-</div>
-<div class="main-menu-wrapper">
-<div class="menu-header">
-<a href="/index" class="menu-logo">
-<img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo">
-</a>
-<a id="menu_close" class="menu-close" href="javascript:void(0);">
-<svg class="svg-inline--fa fa-times fa-w-11" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512" data-fa-i2svg=""><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg><!-- <i class="fas fa-times"></i> Font Awesome fontawesome.com -->
-</a>
-</div>
-<ul class="main-nav">
-<li>
-<a href="/dashboard">Dashboard </a>
-</li>
-
-<ul class="nav header-navbar-rht" style="padding-top: 20px;">
-
-    <li class="nav-item dropdown has-arrow logged-item">
-    <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown" aria-expanded="false">
-    <span class="user-img">
-        <img class="rounded-circle" src="../static/assets/img/admins/{{ admin_profile_picture | default('default.png') }}" width="31" alt="profile">
-    </span>
-    </a>
-    <div class="dropdown-menu dropdown-menu-end">
-    <div class="user-header">
-    <div class="avatar avatar-sm">
-    <img src="../static/assets/img/admins/{{ admin_profile_picture | default('default.png') }}" alt="User Image" class="avatar-img rounded-circle"> 
-    </div>
-    <div class="user-text">
-    <h6>{{admin_name}}</h6>
-    <p class="text-muted mb-0">{{admin_profil_pekerjaan}}</p>
-    </div>
-    </div>
-    <a class="dropdown-item" href="/dashboard">Dashboard</a>
-    <a class="dropdown-item" href="/admin-profile-settings">Pengaturan Admin</a>
-    <a class="dropdown-item" href="/logout">Keluar</a>
-    </div>
-    </li>
-    </ul>
-    </ul>
-    </div>
-    </nav>
-    </div>
-    </header>
-
-
-    <div class="content" style="transform: none; min-height: 355.906px;">
-        <div class="container" style="transform: none; padding-top:50px">
-        <div class="row" style="transform: none;">
-        <div class="col-md-5 col-lg-4 col-xl-3 theiaStickySidebar" style="position: relative; overflow: visible; box-sizing: border-box; min-height: 1px;">
-        
-        
-        
-        <div class="theiaStickySidebar" style="padding-top: 0px; padding-bottom: 1px; position: static; transform: none;"><div class="profile-sidebar">
-        <div class="widget-profile pro-widget-content">
-        <div class="profile-info-widget">
-        <a href="#" class="booking-doc-img">
-        <img src="../static/assets/img/admins/{{ admin_profile_picture | default('default.png') }}" alt="User Image">
-        </a>
-        <div class="profile-det-info">
-            <h3>{{admin_name}}</h3>
-            
-            <div class="patient-details">
-            <h5 class="mb-0">{{admin_kualifikasi}}</h5>
-            <h5 class="mb-0">{{admin_profil_pekerjaan}}</h5>
+<body style="transform: none">
+    <div class="main-wrapper">
+        <header class="header header-fixed header-one header-space">
+            <div class="container">
+                <nav class="navbar navbar-expand-lg header-nav">
+                    <div class="navbar-header">
+                        <a id="mobile_btn" href="javascript:void(0);">
+                            <span class="bar-icon">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </span>
+                        </a>
+                        <a href="/index" class="navbar-brand logo">
+                            <img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo" />
+                        </a>
+                    </div>
+                    <div class="main-menu-wrapper">
+                        <div class="menu-header">
+                            <a href="/index" class="menu-logo">
+                                <img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo" />
+                            </a>
+                            <a id="menu_close" class="menu-close" href="javascript:void(0);">
+                                <svg class="svg-inline--fa fa-times fa-w-11" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512" data-fa-i2svg="">
+                                    <path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path>
+                                </svg>
+                            </a>
+                        </div>
+                        <ul class="main-nav">
+                            <li>
+                                <a href="/dashboard">Dashboard</a>
+                            </li>
+                            <ul class="nav header-navbar-rht">
+                                <li class="nav-item dropdown has-arrow logged-item">
+                                    <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="user-img">
+                                            <img class="rounded-circle" src="../static/assets/img/{{ 'admins' if user_type == 'admin' else 'users' }}/{{ session['user_profile_picture'] }}" width="31" alt="profile" />
+                                        </span>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <div class="user-header">
+                                            <div class="avatar avatar-sm">
+                                                <img src="../static/assets/img/{{ 'admins' if user_type == 'admin' else 'users' }}/{{ session['user_profile_picture'] }}" alt="User Image" class="avatar-img rounded-circle" />
+                                            </div>
+                                            <div class="user-text">
+                                                <h6>{{ session['user_name'] }}</h6>
+                                                <p class="text-muted mb-0">{{ session['user_email'] }}</p>
+                                            </div>
+                                        </div>
+                                        <a class="dropdown-item" href="/dashboard">Dashboard</a>
+                                        {% if user_type == 'admin' %}
+                                        <a class="dropdown-item" href="/admin-profile-settings">Pengaturan Admin</a>
+                                        {% endif %}
+                                        <a class="dropdown-item" href="/logout">Keluar</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </ul>
+                    </div>
+                </nav>
             </div>
-            </div>
-        </div>
-        </div>
-        <div class="dashboard-widget">
-        <nav class="dashboard-menu">
-        <ul>
-        <li>
-            <a href="/dashboard">
-            <svg class="svg-inline--fa fa-columns fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="columns" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="" style="width: 16px; height: 16px;"><path fill="currentColor" d="M464 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zM224 416H64V160h160v256zm224 0H288V160h160v256z"></path></svg><!-- <i class="fas fa-columns"></i> Font Awesome fontawesome.com -->
-            <span>Dashboard</span>
-            </a>
-        </li>
-        <li class = "active">
-            <a href="/classify">
-            <svg class="svg-inline--fa fa-user-injured fa-w-14" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-injured" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg="" style="width: 16px; height: 16px;"><path fill="currentColor" d="M277.37 11.98C261.08 4.47 243.11 0 224 0c-53.69 0-99.5 33.13-118.51 80h81.19l90.69-68.02zM342.51 80c-7.9-19.47-20.67-36.2-36.49-49.52L239.99 80h102.52zM224 256c70.69 0 128-57.31 128-128 0-5.48-.95-10.7-1.61-16H97.61c-.67 5.3-1.61 10.52-1.61 16 0 70.69 57.31 128 128 128zM80 299.7V512h128.26l-98.45-221.52A132.835 132.835 0 0 0 80 299.7zM0 464c0 26.51 21.49 48 48 48V320.24C18.88 344.89 0 381.26 0 422.4V464zm256-48h-55.38l42.67 96H256c26.47 0 48-21.53 48-48s-21.53-48-48-48zm57.6-128h-16.71c-22.24 10.18-46.88 16-72.89 16s-50.65-5.82-72.89-16h-7.37l42.67 96H256c44.11 0 80 35.89 80 80 0 18.08-6.26 34.59-16.41 48H400c26.51 0 48-21.49 48-48v-41.6c0-74.23-60.17-134.4-134.4-134.4z"></path></svg><!-- <i class="fas fa-user-injured"></i> Font Awesome fontawesome.com -->
-            <span>Klasifikasi</span>
-            </a>
-            </li>
-        <li>
-            <a href="/admin-profile-settings">
-            <svg class="svg-inline--fa fa-user-cog fa-w-20" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-cog" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" data-fa-i2svg="" style="width: 16px; height: 16px;"><path fill="currentColor" d="M610.5 373.3c2.6-14.1 2.6-28.5 0-42.6l25.8-14.9c3-1.7 4.3-5.2 3.3-8.5-6.7-21.6-18.2-41.2-33.2-57.4-2.3-2.5-6-3.1-9-1.4l-25.8 14.9c-10.9-9.3-23.4-16.5-36.9-21.3v-29.8c0-3.4-2.4-6.4-5.7-7.1-22.3-5-45-4.8-66.2 0-3.3.7-5.7 3.7-5.7 7.1v29.8c-13.5 4.8-26 12-36.9 21.3l-25.8-14.9c-2.9-1.7-6.7-1.1-9 1.4-15 16.2-26.5 35.8-33.2 57.4-1 3.3.4 6.8 3.3 8.5l25.8 14.9c-2.6 14.1-2.6 28.5 0 42.6l-25.8 14.9c-3 1.7-4.3 5.2-3.3 8.5 6.7 21.6 18.2 41.1 33.2 57.4 2.3 2.5 6 3.1 9 1.4l25.8-14.9c10.9 9.3 23.4 16.5 36.9 21.3v29.8c0 3.4 2.4 6.4 5.7 7.1 22.3 5 45 4.8 66.2 0 3.3-.7 5.7-3.7 5.7-7.1v-29.8c13.5-4.8 26-12 36.9-21.3l25.8 14.9c2.9 1.7 6.7 1.1 9-1.4 15-16.2 26.5-35.8 33.2-57.4 1-3.3-.4-6.8-3.3-8.5l-25.8-14.9zM496 400.5c-26.8 0-48.5-21.8-48.5-48.5s21.8-48.5 48.5-48.5 48.5 21.8 48.5 48.5-21.7 48.5-48.5 48.5zM224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm201.2 226.5c-2.3-1.2-4.6-2.6-6.8-3.9l-7.9 4.6c-6 3.4-12.8 5.3-19.6 5.3-10.9 0-21.4-4.6-28.9-12.6-18.3-19.8-32.3-43.9-40.2-69.6-5.5-17.7 1.9-36.4 17.9-45.7l7.9-4.6c-.1-2.6-.1-5.2 0-7.8l-7.9-4.6c-16-9.2-23.4-28-17.9-45.7.9-2.9 2.2-5.8 3.2-8.7-3.8-.3-7.5-1.2-11.4-1.2h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c10.1 0 19.5-3.2 27.2-8.5-1.2-3.8-2-7.7-2-11.8v-9.2z"></path></svg><!-- <i class="fas fa-user-cog"></i> Font Awesome fontawesome.com -->
-            <span>Pengaturan Admin</span>
-            </a>
-        </li>
-        <li>
-            <a href="/logout">
-            <svg class="svg-inline--fa fa-sign-out-alt fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="sign-out-alt" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="" style="width: 16px; height: 16px;"><path fill="currentColor" d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"></path></svg><!-- <i class="fas fa-sign-out-alt"></i> Font Awesome fontawesome.com -->
-            <span>Keluar</span>
-            </a>
-        </li>
-        </ul>
-        </nav>
-        </div>
-        </div>
-        <div class="resize-sensor"> </div>
-    </div>
-</div>
+        </header>
 
+        <div class="content" style="transform: none; min-height: 355.906px">
+            <div class="container" style="transform: none; padding-top: 50px">
+                <div class="row" style="transform: none">
+                    <div class="col-md-5 col-lg-4 col-xl-3 theiaStickySidebar" style="position: relative; overflow: visible; box-sizing: border-box; min-height: 1px;">
+                        <div class="theiaStickySidebar" style="padding-top: 0px; padding-bottom: 1px; position: static; transform: none;">
+                            <div class="profile-sidebar">
+                                <div class="widget-profile pro-widget-content">
+                                    <div class="profile-info-widget">
+                                        <a href="#" class="booking-doc-img">
+                                            <img src="../static/assets/img/{{ 'admins' if user_type == 'admin' else 'users' }}/{{ session['user_profile_picture'] }}" alt="User Image" />
+                                        </a>
+                                        <div class="profile-det-info">
+                                            <h3>{{ session['user_name'] }}</h3>
+                                        </div>
+                                        <div class="patient-details">
+                                            <h5 class="mb-0">{{ session['user_qualification'] }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dashboard-widget">
+                                    <nav class="dashboard-menu">
+                                        <ul>
+                                            <li>
+                                                <a href="/dashboard">
+                                                    <svg class="svg-inline--fa fa-columns fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="columns" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="" style="width: 16px; height: 16px">
+                                                        <path fill="currentColor" d="M464 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zM224 416H64V160h160v256zm224 0H288V160h160v256z"></path>
+                                                    </svg>
+                                                    <span>Dashboard</span>
+                                                </a>
+                                            </li>
+                                            <li class="active">
+                                                <a href="/classify">
+                                                    <svg class="svg-inline--fa fa-user-injured fa-w-14" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-injured" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg="" style="width: 16px; height: 16px">
+                                                        <path fill="currentColor" d="M277.37 11.98C261.08 4.47 243.11 0 224 0c-53.69 0-99.5 33.13-118.51 80h81.19l90.69-68.02zM342.51 80c-7.9-19.47-20.67-36.2-36.49-49.52L239.99 80h102.52zM224 256c70.69 0 128-57.31 128-128 0-5.48-.95-10.7-1.61-16H97.61c-.67 5.3-1.61 10.52-1.61 16 0 70.69 57.31 128 128 128zM80 299.7V512h128.26l-98.45-221.52A132.835 132.835 0 0 0 80 299.7zM0 464c0 26.51 21.49 48 48 48V320.24C18.88 344.89 0 381.26 0 422.4V464zm256-48h-55.38l42.67 96H256c26.47 0 48-21.53 48-48s-21.53-48-48-48zm57.6-128h-16.71c-22.24 10.18-46.88 16-72.89 16s-50.65-5.82-72.89-16h-7.37l42.67 96H256c44.11 0 80 35.89 80 80 0 18.08-6.26 34.59-16.41 48H400c26.51 0 48-21.49 48-48v-41.6c0-74.23-60.17-134.4-134.4-134.4z"></path>
+                                                    </svg>
+                                                    <span>Klasifikasi</span>
+                                                </a>
+                                            </li>
+                                            {% if user_type == 'admin' %}
+                                            <li>
+                                                <a href="/admin-profile-settings">
+                                                    <svg class="svg-inline--fa fa-user-cog fa-w-20" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-cog" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" data-fa-i2svg="" style="width: 16px; height: 16px">
+                                                        <path fill="currentColor" d="M610.5 373.3c2.6-14.1 2.6-28.5 0-42.6l25.8-14.9c3-1.7 4.3-5.2 3.3-8.5-6.7-21.6-18.2-41.2-33.2-57.4-2.3-2.5-6-3.1-9-1.4l-25.8 14.9c-10.9-9.3-23.4-16.5-36.9-21.3v-29.8c0-3.4-2.4-6.4-5.7-7.1-22.3-5-45-4.8-66.2 0-3.3.7-5.7 3.7-5.7 7.1v29.8c-13.5 4.8-26 12-36.9 21.3l-25.8-14.9c-2.9-1.7-6.7-1.1-9 1.4-15 16.2-26.5 35.8-33.2 57.4-1 3.3.4 6.8 3.3 8.5l25.8 14.9c-2.6 14.1-2.6 28.5 0 42.6l-25.8 14.9c-3 1.7-4.3 5.2-3.3 8.5 6.7 21.6 18.2 41.1 33.2 57.4 2.3 2.5 6 3.1 9 1.4l25.8-14.9c10.9 9.3 23.4 16.5 36.9 21.3v29.8c0 3.4 2.4 6.4 5.7 7.1 22.3 5 45 4.8 66.2 0 3.3-.7 5.7-3.7 5.7-7.1v-29.8c13.5-4.8 26-12 36.9-21.3l25.8 14.9c2.9 1.7 6.7 1.1 9-1.4 15-16.2 26.5-35.8 33.2-57.4 1-3.3-.4-6.8-3.3-8.5l-25.8-14.9zM496 400.5c-26.8 0-48.5-21.8-48.5-48.5s21.8-48.5 48.5-48.5 48.5 21.8 48.5 48.5-21.7 48.5-48.5 48.5zM224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm201.2 226.5c-2.3-1.2-4.6-2.6-6.8-3.9l-7.9 4.6c-6 3.4-12.8 5.3-19.6 5.3-10.9 0-21.4-4.6-28.9-12.6-18.3-19.8-32.3-43.9-40.2-69.6-5.5-17.7 1.9-36.4 17.9-45.7l7.9-4.6c-.1-2.6-.1-5.2 0-7.8l-7.9-4.6c-16-9.2-23.4-28-17.9-45.7.9-2.9 2.2-5.8 3.2-8.7-3.8-.3-7.5-1.2-11.4-1.2h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c10.1 0 19.5-3.2 27.2-8.5-1.2-3.8-2-7.7-2-11.8v-9.2z"></path>
+                                                    </svg>
+                                                    <span>Pengaturan Admin</span>
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            <li>
+                                                <a href="/logout">
+                                                    <svg class="svg-inline--fa fa-sign-out-alt fa-w-16" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="sign-out-alt" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="" style="width: 16px; height: 16px">
+                                                        <path fill="currentColor" d="M497 273L329 441c-15 15-41 4.5-41-17v-96H152c-13.3 0-24-10.7-24-24v-96c0-13.3 10.7-24 24-24h136V88c0-21.4 25.9-32 41-17l168 168c9.3 9.4 9.3 24.6 0 34zM192 436v-40c0-6.6-5.4-12-12-12H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h84c6.6 0 12-5.4 12-12V76c0-6.6-5.4-12-12-12H96c-53 0-96 43-96 96v192c0 53 43 96 96 96h84c6.6 0 12-5.4 12-12z"></path>
+                                                    </svg>
+                                                    <span>Keluar</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                            <div class="resize-sensor"></div>
+                        </div>
+                    </div>
 
-<div class="col-md-7 col-lg-8 col-xl-9">
-    
-    <div class="card">
-    <div class="card-body">
-        <div class=" container-fluid">
-            <div class="page-header">
-              <div class="row">
-               <div class="col-sm-12">
-                    <h3 class="page-title">
-                        Hi. Selamat datang, {{admin_name}}.
-                    </h3>
+                    <div class="col-md-7 col-lg-8 col-xl-9">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="container-fluid">
+                                    <div class="page-header">
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <h3 class="page-title">Hi. Selamat datang, {{ session['user_name'] }}.</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h6>Silakan isi data di bawah untuk klasifikasi rekomendasi perawatan pasien</h6>
+                                    {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                    <div class="error-message" style="padding-top: 12px">
+                                        {% for category, message in messages %}
+                                        <div class="{{ category }}">{{ message }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="/classify">
+                            <div class="row form-group">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nama Pasien<span class="text-danger">*</span></label>
+                                        <input type="text" name="nama" class="form-control" placeholder="Masukkan Nama" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Haematocrit<span class="text-danger">*</span></label>
+                                        <input type="text" name="haematocrit" class="form-control" placeholder="Masukkan Haematocrit" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Haemoglobins<span class="text-danger">*</span></label>
+                                        <input type="text" name="haemoglobins" class="form-control" placeholder="Masukkan Haemoglobins" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Erythrocyte<span class="text-danger">*</span></label>
+                                        <input type="text" name="erythrocyte" class="form-control" placeholder="Masukkan Erythrocyte" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Leucocyte<span class="text-danger">*</span></label>
+                                        <input type="text" name="leucocyte" class="form-control" placeholder="Masukkan Leucocyte" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Thrombocyte<span class="text-danger">*</span></label>
+                                        <input type="text" name="thrombocyte" class="form-control" placeholder="Masukkan Thrombocyte" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Mch<span class="text-danger">*</span></label>
+                                        <input type="text" name="mch" class="form-control" placeholder="Masukkan Mch" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Mchc<span class="text-danger">*</span></label>
+                                        <input type="text" name="mchc" class="form-control" placeholder="Masukkan Mchc" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Mcv<span class="text-danger">*</span></label>
+                                        <input type="text" name="mcv" class="form-control" placeholder="Masukkan Mcv" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Umur<span class="text-danger">*</span></label>
+                                        <input type="text" name="umur" class="form-control" placeholder="Masukkan Umur" required /><br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Jenis Kelamin<span class="text-danger">*</span></label>
+                                        <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
+                                            <option value="0">Laki-laki</option>
+                                            <option value="1">Perempuan</option>
+                                        </select>
+                                        <br />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <button type="submit" class="btn btn-primary prime-btn" value="Update">
+                                            Proses Klasifikasi
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        {% if result %}
+                        <h2>Hasil Klasifikasi Rekomendasi Perawatan Pasien</h2>
+                        <p>Berdasarkan data yang diberikan, hasil klasifikasi adalah:</p>
+                        <p>{{ result }}</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
-    <h6>Silakan isi data di bawah untuk klasifikasi rekomendasi perawatan pasien</h6>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="error-message" style="padding-top:12px">
-            {% for category, message in messages %}
-              <div class="{{ category }}">{{ message }}</div>
-            {% endfor %}
-        </div>
     </div>
-</div>
-        {% endif %}
-      {% endwith %}
 
-
-<form method="POST" action="/classify">
-    <div class="row form-group">
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Nama Pasien<span class="text-danger">*</span></label>
-                <input type="text" name="nama" class="form-control" placeholder="Masukkan Nama" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Haematocrit<span class="text-danger">*</span></label>
-                <input type="text" name="haematocrit" class="form-control" placeholder="Masukkan Haematocrit" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Haemoglobins<span class="text-danger">*</span></label>
-                <input type="text" name="haemoglobins" class="form-control" placeholder="Masukkan Haemoglobins" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Erythrocyte<span class="text-danger">*</span></label>
-                <input type="text" name="erythrocyte" class="form-control" placeholder="Masukkan Erythrocyte" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Leucocyte<span class="text-danger">*</span></label>
-                <input type="text" name="leucocyte" class="form-control" placeholder="Masukkan Leucocyte" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Thrombocyte<span class="text-danger">*</span></label>
-                <input type="text" name="thrombocyte" class="form-control" placeholder="Masukkan Thrombocyte" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Mch<span class="text-danger">*</span></label>
-                <input type="text" name="mch" class="form-control" placeholder="Masukkan Mch" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Mchc<span class="text-danger">*</span></label>
-                <input type="text" name="mchc" class="form-control" placeholder="Masukkan Mchc" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Mcv<span class="text-danger">*</span></label>
-                <input type="text" name="mcv" class="form-control" placeholder="Masukkan Mcv" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Umur<span class="text-danger">*</span></label>
-                <input type="text" name="umur" class="form-control" placeholder="Masukkan Umur" required><br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <label>Jenis Kelamin<span class="text-danger">*</span></label>
-                <select id="jenis_kelamin" name="jenis_kelamin" required>
-                    <option value="0">Laki-laki</option>
-                    <option value="1">Perempuan</option>
-                </select> <br>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary prime-btn" value="Update">Proses Klasifikasi</button></div>
-            </div>
-        </div>
-</form>
-
-{% if result_rf %}
-<h2>Hasil Klasifikasi Rekomendasi Perawatan Pasien</h2>
-<p>Berdasarkan data yang diberikan, hasil klasifikasi adalah:</p>
-<p>Random Forest: {{ result_rf }}</p>
-{% endif %}
-
-
-<script src="../static/assets/js/jquery-3.6.0.min.js"></script>
-<script src="../static/assets/js/bootstrap.bundle.min.js"></script>
-<script src="../static/assets/js/feather.min.js"></script>
-<script src="../static/assets/plugins/theia-sticky-sidebar/ResizeSensor.js"></script>
-<script src="../static/assets/plugins/theia-sticky-sidebar/theia-sticky-sidebar.js"></script>
-<script src="../static/assets/js/script.js"></script>
-
-
+    <script src="../static/assets/js/jquery-3.6.0.min.js"></script>
+    <script src="../static/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/assets/js/feather.min.js"></script>
+    <script src="../static/assets/plugins/theia-sticky-sidebar/ResizeSensor.js"></script>
+    <script src="../static/assets/plugins/theia-sticky-sidebar/theia-sticky-sidebar.js"></script>
+    <script src="../static/assets/js/script.js"></script>
 </body>
 </html>
