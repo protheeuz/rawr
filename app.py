@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from flask_sendgrid import SendGrid
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail as SendGridMail
 from werkzeug.utils import secure_filename
+from jinja2 import Template
 import logging
 import secrets
 import re
@@ -16,7 +17,7 @@ import pickle
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(8)
-app.config['UPLOAD_FOLDER'] = './static/assets/img/admins' # folder tempat menyimpan file
+app.config['UPLOAD_FOLDER'] = 'static/assets/img/users'
 
 # Konfigurasi MySQL
 app.config['MYSQL_HOST'] = 'localhost'
@@ -25,7 +26,7 @@ app.config['MYSQL_PASSWORD'] = ''
 app.config['MYSQL_DB'] = 'db_puskesmas'
 
 # Konfigurasi SendGrid
-app.config['SENDGRID_API_KEY'] = ''
+app.config['SENDGRID_API_KEY'] = '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'
 app.config['SENDGRID_DEFAULT_FROM'] = 'matimatech@gmail.com'
 app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
 app.config['MAIL_USERNAME'] = 'apikey'
@@ -33,7 +34,12 @@ app.config['MAIL_USERNAME'] = 'apikey'
 mysql = MySQL(app)
 sg = SendGrid(app)
 
-app.config['UPLOAD_FOLDER'] = 'static/assets/img/admins'
+# Muat model dan transformer RFE
+with open('./models/rfe_transformer.pkl', 'rb') as transformer_file:
+    rfe_transformer = pickle.load(transformer_file)
+
+with open('./models/svm_model_rfe.pkl', 'rb') as model_file:
+    svm_model_rfe = pickle.load(model_file)
 
 # Fungsi untuk membuat koneksi ke database
 def get_db():
@@ -60,12 +66,20 @@ def is_strong_password(password):
 
 # Fungsi untuk mengirim kode verifikasi ke email
 def send_verification_code(email, verification_code):
+    with open('templates/verification_email.html', 'r') as file:
+        html_template = file.read()
+
+    template = Template(html_template)
+
+    html_content = template.render(verification_code=verification_code)
+
     message = SendGridMail(
         from_email='matimatech@gmail.com',
         to_emails=email,
         subject='Kode Verifikasi Anda',
-        plain_text_content=f'Terima kasih telah mendaftar di Sistem Klasifikasi Rekomendasi Perawatan pasien Puskesmas - Pulogadung. Kode verifikasi Anda adalah: {verification_code}'
+        html_content=html_content
     )
+
     try:
         sg = SendGridAPIClient(app.config['SENDGRID_API_KEY'])
         response = sg.send(message)
@@ -75,20 +89,11 @@ def send_verification_code(email, verification_code):
     except Exception as e:
         print(e)
 
-# Load or create patients data
-# try:
-#     patients_df = pd.read_csv('data/patients.csv')
-# except FileNotFoundError:
-#     patients_df = pd.DataFrame(columns=['Nama', 'HAEMATOCRIT', 'HAEMOGLOBINS', 'ERYTHROCYTE', 
-#                                         'LEUCOCYTE', 'THROMBOCYTE', 'MCH', 'MCHC', 
-#                                         'MCV', 'UMUR', 'JENIS_KELAMIN', 'Hasil'])
-
 def convert_to_float(value):
     try:
         return float(value.replace(',', '.'))
     except ValueError:
         return float(value)
-    
     
 @app.route('/')
 def home():
@@ -109,7 +114,6 @@ def index():
     
     return render_template('index.html', name=name, profile=profile)
 
-
 @app.route("/terms-condition")
 def terms_condition():
     if 'logged_in' in session:
@@ -122,172 +126,128 @@ def terms_condition_user():
         return redirect(url_for('terms_condition'))
     return render_template("terms-condition-user.html")
 
-# ------------------------------------------------------------------------------------------------------------------------------
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'logged_in' in session:
-        return redirect(url_for('index'))
-    
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
+
+        logging.debug(f"Login attempt for email: {email}")
+
         db, cur = get_db()
-        cur.execute("SELECT * FROM admins WHERE email = %s", (email,))
-        admin = cur.fetchone()
+        
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
         db.close()
         
-        if admin:
-            if hashlib.sha256(password.encode()).hexdigest() == admin['password']:
+        if user:
+            if hashlib.sha256(password.encode()).hexdigest() == user['password']:
                 session['logged_in'] = True
-                session['admin_email'] = email
-                session['admin_name'] = admin['name']
-                session['admin_kualifikasi'] = admin.get('kualifikasi')
-                session['admin_profil_pekerjaan'] = admin.get('profil_pekerjaan')
-                session['admin_profile_picture'] = admin.get('profile_picture')
+                session['user_type'] = user['role']
+                session['user_email'] = email
+                session['user_name'] = user['name']
+                session['user_qualification'] = user.get('qualification')
+                session['user_profile_picture'] = user.get('profile_picture')
+                logging.debug(f"User {email} logged in successfully.")
                 return redirect(url_for('dashboard'))
             else:
+                logging.debug("Incorrect password")
                 flash('Password salah, silakan coba lagi.', 'error')
-                return redirect(url_for('login'))
         else:
+            logging.debug("Email not registered")
             flash('Email tidak terdaftar, silakan hubungi Admin', 'error')
-            return redirect(url_for('login'))
 
     return render_template('login.html')
-
-
-@app.route('/admin-profile-settings', methods=['GET', 'POST'])
-def admin_profile_settings():
-    admin_email = session.get('admin_email')
-
-    if not admin_email:
-        flash('Email tidak tersedia di session', 'error')
-        return redirect(url_for('login'))
-
-    if request.method == 'GET':
-        admin_name = session.get('admin_name')
-        admin_kualifikasi = session.get('admin_kualifikasi')
-        admin_profil_pekerjaan = session.get('admin_profil_pekerjaan')
-        admin_profile_picture = session.get('admin_profile_picture')
-        
-        return render_template('admin-profile-settings.html', admin_name=admin_name, admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, admin_profil_pekerjaan=admin_profil_pekerjaan, admin_profile_picture=admin_profile_picture)
-
-    elif request.method == 'POST':
-        name = request.form['name']
-        kualifikasi = request.form['qualification']
-        profil_pekerjaan = request.form['job']
-
-        profile_picture = session.get('admin_profile_picture')
-
-        # Ambil foto yang diunggah dari form
-        if 'photo' in request.files:
-            photo = request.files['photo']
-            if photo.filename != '':
-                filename = secure_filename(admin_email + os.path.splitext(photo.filename)[1])
-                photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                profile_picture = filename
-
-        try:
-            db, cur = get_db()
-            update_query = """
-            UPDATE admins SET name = %s, kualifikasi = %s, profil_pekerjaan = %s, profile_picture = %s WHERE email = %s
-            """
-            cur.execute(update_query, (name, kualifikasi, profil_pekerjaan, profile_picture, admin_email))
-            db.commit()
-
-            session['admin_profile_picture'] = profile_picture  # Pastikan disimpan sebagai string
-
-        except Exception as e:
-            db.rollback()
-            flash(f'Gagal memperbarui database: {e}', 'error')
-        finally:
-            db.close()
-
-        session['admin_name'] = name
-        session['admin_kualifikasi'] = kualifikasi
-        session['admin_profil_pekerjaan'] = profil_pekerjaan
-
-        return redirect(url_for('admin_profile_settings'))
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     if 'logged_in' not in session:
+        logging.debug("User not logged in, redirecting to login page.")
         return redirect(url_for('login'))
-    
-    admin_email = session.get('admin_email')
 
-    # Ambil data admin dari database
-    db, cur = get_db()
-    cur.execute("SELECT * FROM admins WHERE email = %s", (admin_email,))
-    admin_data = cur.fetchone()
-    db.close()
+    user_type = session.get('user_type')
+    if user_type not in ['admin', 'pengunjung']:
+        flash('Anda tidak memiliki hak akses.', 'error')
+        return redirect(url_for('login'))
 
-    if admin_data:
-        session['admin_name'] = admin_data.get('name')
-        session['admin_kualifikasi'] = admin_data.get('kualifikasi')
-        session['admin_profil_pekerjaan'] = admin_data.get('profil_pekerjaan')
-        session['admin_profile_picture'] = admin_data.get('profile_picture').decode('utf-8') if isinstance(admin_data.get('profile_picture'), bytes) else admin_data.get('profile_picture')
+    if user_type == 'admin':
+        admin_email = session.get('user_email')
 
-    admin_name = session.get('admin_name')
-    admin_kualifikasi = session.get('admin_kualifikasi')
-    admin_profil_pekerjaan = session.get('admin_profil_pekerjaan')
-    admin_profile_picture = session.get('admin_profile_picture')
+        db, cur = get_db()
+        cur.execute("SELECT * FROM admins WHERE email = %s", (admin_email,))
+        admin_data = cur.fetchone()
+        db.close()
 
-    # Debug statements
-    print(f"Admin name: {admin_name}")
-    print(f"Admin profile picture (from session): {admin_profile_picture}")
+        admin_name = session.get('user_name')
+        admin_kualifikasi = admin_data.get('qualification')
+        admin_profil_pekerjaan = admin_data.get('job')
+        admin_profile_picture = admin_data.get('profile_picture')
 
-    if admin_profile_picture:
-        admin_profile_picture = admin_profile_picture.strip()  # Ensure no extra characters
-        admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
-    else:
-        admin_profile_picture = url_for('static', filename='assets/img/admins/default.png')
+        if admin_profile_picture:
+            admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
 
-    logging.info(f"Admin profile picture URL: {admin_profile_picture}")
-    print(admin_profile_picture, "data berhasil diload")
+        db, cur = get_db()
+        cur.execute("SELECT * FROM patients")
+        patients = cur.fetchall()
+        db.close()
 
-    # Ambil data pasien dari database
-    db, cur = get_db()
-    cur.execute("SELECT * FROM patients")
-    patients = cur.fetchall()
-    db.close()
+        patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
 
-    patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
+        total_patients = len(patients_df)
+        total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
+        total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
 
-    total_patients = len(patients_df)
-    total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
-    total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
+        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
+                               total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
+                               admin_name=admin_name, admin_profile_picture=admin_profile_picture, 
+                               admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, 
+                               admin_profil_pekerjaan=admin_profil_pekerjaan)
+    elif user_type == 'pengunjung':
+        user_email = session.get('user_email')
 
-    return render_template('dashboard.html', total_patients=total_patients, 
-                           total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
-                           admin_name=admin_name, admin_profile_picture=admin_profile_picture, 
-                           admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, 
-                           admin_profil_pekerjaan=admin_profil_pekerjaan)
+        db, cur = get_db()
+        cur.execute("SELECT * FROM users WHERE email = %s", (user_email,))
+        user_data = cur.fetchone()
+        db.close()
 
-# Route untuk halaman registrasi admin
+        user_name = session.get('user_name')
+        user_qualification = user_data.get('qualification')
+        user_profile_picture = user_data.get('profile_picture')
+
+        if user_profile_picture:
+            user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
+
+        db, cur = get_db()
+        cur.execute("SELECT * FROM patients")
+        patients = cur.fetchall()
+        db.close()
+
+        patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
+
+        total_patients = len(patients_df)
+        total_rujukan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rujukan Rumah Sakit'])
+        total_rawat_jalan = len(patients_df[patients_df['hasil_klasifikasi'] == 'Rawat Jalan'])
+
+        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
+                               total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
+                               user_name=user_name, user_profile_picture=user_profile_picture, 
+                               user_email=user_email, user_qualification=user_qualification)
+
 @app.route('/admin-register', methods=['GET', 'POST'])
 def admin_register():
-    if 'logged_in' not in session:
+    if 'logged_in' not in session or session.get('user_type') != 'admin':
+        flash('Hanya admin yang dapat mengakses halaman ini.', 'error')
         return redirect(url_for('login'))
-    
-    admin_email = session.get('admin_email')
-    
-    if request.method == 'GET':
-        admin_name = session.get('admin_name')
-        admin_kualifikasi = session.get('admin_kualifikasi')
-        admin_profil_pekerjaan = session.get('admin_profil_pekerjaan')
-        admin_profile_picture = session.get('admin_profile_picture')
-        flash_message = session.pop('admin_register_success', None)  # Ambil pesan sukses dan hapus dari session
-        return render_template('admin-register.html', admin_name=admin_name, admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, admin_profil_pekerjaan=admin_profil_pekerjaan, admin_profile_picture=admin_profile_picture, flash_message=flash_message)
-   
+
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         password = request.form['password']
-        kualifikasi = request.form['kualifikasi']
-        
-        # Lakukan validasi (contoh sederhana)
+        qualification = request.form['qualification']
+
         if not name or not email or not password:
             flash('Semua field harus diisi.', 'error')
             return redirect(url_for('admin_register'))
@@ -295,24 +255,61 @@ def admin_register():
         if not is_strong_password(password):
             flash('Password harus memiliki minimal 8 karakter, termasuk huruf besar, huruf kecil, angka, dan simbol.', 'error')
             return redirect(url_for('admin_register'))
-        
+
         hashed_password = hash_password(password)
-        
+
         db, cur = get_db()
-        
         try:
-            cur.execute("INSERT INTO admins (name, email, password, kualifikasi) VALUES (%s, %s, %s, %s)", (name, email, hashed_password, kualifikasi))
+            cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'admin')", 
+                        (name, email, hashed_password, qualification))
             db.commit()
             flash('Admin berhasil didaftarkan.', 'success')
         except MySQLdb.Error as e:
             db.rollback()
-            flash(f'Terjadi kesalahan: Admin sudah tersedia.', 'error')
+            flash(f'Terjadi kesalahan: {e}', 'error')
         finally:
             db.close()
-        
-        return redirect(url_for('admin_register'))
-    
+
+        return redirect(url_for('dashboard'))
+
     return render_template('admin-register.html')
+
+@app.route('/user-register', methods=['GET', 'POST'])
+def user_register():
+    if request.method == 'GET':
+        flash_message = session.pop('user_register_success', None)
+        return render_template('user-register.html', flash_message=flash_message)
+
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        qualification = request.form['qualification']
+
+        if not name or not email or not password:
+            flash('Semua field harus diisi.', 'error')
+            return redirect(url_for('user_register'))
+
+        if not is_strong_password(password):
+            flash('Password harus memiliki minimal 8 karakter, termasuk huruf besar, huruf kecil, angka, dan simbol.', 'error')
+            return redirect(url_for('user_register'))
+
+        hashed_password = hash_password(password)
+        
+        verification_code = ''.join(random.choices('0123456789', k=6))
+        
+        session['fullname'] = name
+        session['email'] = email
+        session['password'] = hashed_password
+        session['qualification'] = qualification
+        session['verification_code'] = verification_code
+        
+        send_verification_code(email, verification_code)
+        
+        flash('Kode verifikasi telah dikirim ke email Anda. Silakan cek email Anda.', 'success')
+        return redirect(url_for('verify'))
+
+    return render_template('user-register.html')
 
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
@@ -331,137 +328,169 @@ def verify():
             fullname = session.get('fullname')
             email = session.get('email')
             password = session.get('password')
+            qualification = session.get('qualification')
 
             db, cur = get_db()
-            cur.execute("INSERT INTO admins (name, email, password) VALUES (%s, %s, %s)", (fullname, email, hash_password(password)))
-            db.commit()
-            db.close()
+            try:
+                cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'pengunjung')", 
+                            (fullname, email, password, qualification))
+                db.commit()
+                db.close()
 
-            session.pop('verification_code')
-            session.pop('fullname')
-            session.pop('email')
-            session.pop('password')
+                session.pop('verification_code')
+                session.pop('fullname')
+                session.pop('email')
+                session.pop('password')
+                session.pop('qualification')
 
-            flash('Akun berhasil dibuat! Silakan login.', 'success')
-            return redirect(url_for('login'))
+                flash('Akun berhasil dibuat! Silakan login.', 'success')
+                return redirect(url_for('login'))
+            except MySQLdb.Error as e:
+                db.rollback()
+                flash(f'Terjadi kesalahan: {e}', 'error')
         else:
             flash('Kode verifikasi tidak valid! Silakan coba lagi.', 'error')
             return redirect(url_for('verify'))
 
-    return render_template('verify_modal.html')
+    return render_template('verify.html')
 
+@app.route('/admin-profile-settings', methods=['GET', 'POST'])
+def admin_profile_settings():
+    admin_email = session.get('user_email')
 
-
-
-
-@app.route('/update_admin_data', methods=['POST'])
-def update_admin_data():
-    if 'logged_in' not in session:
+    if not admin_email:
+        flash('Email tidak tersedia di session', 'error')
         return redirect(url_for('login'))
 
-    admin_email = session.get('admin_email')
+    if request.method == 'GET':
+        admin_name = session.get('user_name')
+        admin_kualifikasi = session.get('user_qualification')
+        admin_profil_pekerjaan = session.get('user_job')
+        admin_profile_picture = session.get('user_profile_picture')
+        result = request.args.get('result')
+        return render_template('admin-profile-settings.html', admin_name=admin_name, admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, admin_profil_pekerjaan=admin_profil_pekerjaan, admin_profile_picture=admin_profile_picture, result=result)
 
-    name = request.form.get('name')
-    kualifikasi = request.form.get('kualifikasi')
-    profil_pekerjaan = request.form.get('profil_pekerjaan')
+    elif request.method == 'POST':
+        name = request.form['name']
+        kualifikasi = request.form['qualification']
+        profil_pekerjaan = request.form['job']
+        profile_picture = None
 
-    profile_picture = None
-    if 'profile_picture' in request.files:
-        profile_picture_file = request.files['profile_picture']
-        if profile_picture_file.filename != '':
-            filename = secure_filename(admin_email + os.path.splitext(profile_picture_file.filename)[1])
-            profile_picture_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            profile_picture_file.save(profile_picture_path)
-            profile_picture = filename
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            if photo.filename != '':
+                filename = secure_filename(admin_email + os.path.splitext(photo.filename)[1])
+                photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                profile_picture = filename
 
-    db, cur = get_db()
-    update_query = "UPDATE admins SET name = %s, kualifikasi = %s, profil_pekerjaan = %s, profile_picture = %s WHERE email = %s"
-    cur.execute(update_query, (name, kualifikasi, profil_pekerjaan, profile_picture, admin_email))
-    db.commit()
-    db.close()
-
-    # Update session data
-    session['admin_name'] = name
-    session['admin_kualifikasi'] = kualifikasi
-    session['admin_profil_pekerjaan'] = profil_pekerjaan
-    if profile_picture:
-        session['admin_profile_picture'] = profile_picture
-
-    return redirect(url_for('dashboard'))
-
-
-@app.route('/upload-profile-picture', methods=['GET', 'POST'])
-def upload_profile_picture():
-    if 'logged_in' not in session:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        if 'profile_picture' not in request.files:
-            flash('Tidak ada file yang dipilih', 'error')
-            return redirect(request.url)
-        
-        file = request.files['profile_picture']
-        
-        if file.filename == '':
-            flash('Tidak ada file yang dipilih', 'error')
-            return redirect(request.url)
-        
-        if file:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            
-            # Update profile picture di database
+        try:
             db, cur = get_db()
-            cur.execute("UPDATE admins SET profile_picture = %s WHERE email = %s", (filename, session['admin_email']))
+            update_query = "UPDATE admins SET name = %s, kualifikasi = %s, profil_pekerjaan = %s WHERE email = %s"
+            cur.execute(update_query, (name, kualifikasi, profil_pekerjaan, admin_email))
             db.commit()
+
+            if profile_picture:
+                cur.execute("UPDATE admins SET profile_picture = %s WHERE email = %s", (profile_picture, admin_email))
+                db.commit()
+                session['user_profile_picture'] = profile_picture
+
+        except Exception as e:
+            db.rollback()
+            flash(f'Gagal memperbarui database: {e}', 'error')
+        finally:
             db.close()
-            
-            # Update session
-            session['admin_profile_picture'] = filename
-            
-            flash('Profile picture berhasil diupload', 'success')
-            return redirect(url_for('dashboard'))
-    
-    return render_template('upload-profile-picture.html')
 
+        session['user_name'] = name
+        session['user_qualification'] = kualifikasi
+        session['user_job'] = profil_pekerjaan
 
+        return redirect(url_for('admin_profile_settings'))
+
+@app.route('/user-profile-settings', methods=['GET', 'POST'])
+def user_profile_settings():
+    user_email = session.get('user_email')
+
+    if not user_email:
+        flash('Email tidak tersedia di session', 'error')
+        return redirect(url_for('login'))
+
+    if request.method == 'GET':
+        user_name = session.get('user_name')
+        user_profile_picture = session.get('user_profile_picture')
+        user_qualification = session.get('user_qualification')
+        result = request.args.get('result')
+        return render_template('user-profile-settings.html', user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture, user_qualification=user_qualification, result=result)
+
+    elif request.method == 'POST':
+        name = request.form['name']
+        qualification = request.form['qualification']
+        profile_picture = None
+
+        if 'photo' in request.files:
+            photo = request.files['photo']
+            if photo.filename != '':
+                filename = secure_filename(user_email + os.path.splitext(photo.filename)[1])
+                photo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                profile_picture = filename
+
+        try:
+            db, cur = get_db()
+            update_query = "UPDATE users SET name = %s, qualification = %s WHERE email = %s"
+            cur.execute(update_query, (name, qualification, user_email))
+            db.commit()
+
+            if profile_picture:
+                cur.execute("UPDATE users SET profile_picture = %s WHERE email = %s", (profile_picture, user_email))
+                db.commit()
+                session['user_profile_picture'] = profile_picture
+
+        except Exception as e:
+            db.rollback()
+            flash(f'Gagal memperbarui database: {e}', 'error')
+        finally:
+            db.close()
+
+        session['user_name'] = name
+        session['user_qualification'] = qualification
+
+        return redirect(url_for('user_profile_settings'))
 
 @app.route('/classify', methods=['GET', 'POST'])
 def classify():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
-    
-    admin_email = session.get('admin_email')
-    
+
+    user_type = session.get('user_type')
+    user_name = session.get('user_name')
+    user_email = session.get('user_email')
+    user_profile_picture = session.get('user_profile_picture')
+
     if request.method == 'GET':
-        admin_name = session.get('admin_name')
-        admin_kualifikasi = session.get('admin_kualifikasi')
-        admin_profil_pekerjaan = session.get('admin_profil_pekerjaan')
-        admin_profile_picture = session.get('admin_profile_picture')
-        flash_message = session.pop('admin_register_success', None)  # Ambil pesan sukses dan hapus dari session
-        return render_template('classify.html', admin_name=admin_name, admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, admin_profil_pekerjaan=admin_profil_pekerjaan, admin_profile_picture=admin_profile_picture, flash_message=flash_message)
-        
-    if request.method == 'POST':
+        return render_template('classify.html', user_type=user_type, user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture)
+
+    elif request.method == 'POST':
         data = request.form
         input_data = [[convert_to_float(data['haematocrit']), convert_to_float(data['haemoglobins']), convert_to_float(data['erythrocyte']),
                        convert_to_float(data['leucocyte']), convert_to_float(data['thrombocyte']), convert_to_float(data['mch']), 
                        convert_to_float(data['mchc']), convert_to_float(data['mcv']), int(data['umur']), int(data['jenis_kelamin'])]]
-        
-        prediction_rf = rf_model.predict(input_data)[0]
 
-        result_rf = "Rujukan Rumah Sakit" if prediction_rf == 1 else "Rawat Jalan"
+        transformed_data = rfe_transformer.transform(input_data)
+        prediction = svm_model_rfe.predict(transformed_data)[0]
+
+        result = "Rujukan Rumah Sakit" if prediction == 1 else "Rawat Jalan"
 
         # Simpan data pasien ke dalam database MySQL
         db, cur = get_db()
         cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
                     (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'], 
-                     data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], result_rf))
+                     data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], result))
         db.commit()
         db.close()
 
-        return render_template('classify.html', result_rf=result_rf)
+        return render_template('classify.html', result=result, user_type=user_type, user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture)
 
     return render_template('classify.html')
+
 
 
 @app.route('/logout')
