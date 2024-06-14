@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from dotenv import load_dotenv
+from flask import Flask, get_flashed_messages, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from flask_sendgrid import SendGrid
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail as SendGridMail
 from werkzeug.utils import secure_filename
 from jinja2 import Template
+from itsdangerous import URLSafeTimedSerializer
 import logging
 import secrets
 import re
@@ -15,21 +17,23 @@ import hashlib
 import pandas as pd
 import pickle
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(8)
+app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(8))
+serializer = URLSafeTimedSerializer(app.secret_key)
 app.config['UPLOAD_FOLDER_USERS'] = 'static/assets/img/users'
 app.config['UPLOAD_FOLDER_ADMINS'] = 'static/assets/img/admins'
 
-
 # Konfigurasi MySQL
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'db_puskesmas'
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
+app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
 
 # Konfigurasi SendGrid
-app.config['SENDGRID_API_KEY'] = 'SEND_GRID_API_KEY'
-app.config['SENDGRID_DEFAULT_FROM'] = 'matimatech@gmail.com'
+app.config['SENDGRID_API_KEY'] = os.getenv('SENDGRID_API_KEY')
+app.config['SENDGRID_DEFAULT_FROM'] = os.getenv('SENDGRID_DEFAULT_FROM')
 app.config['MAIL_SERVER'] = 'smtp.sendgrid.net'
 app.config['MAIL_USERNAME'] = 'apikey'
 
@@ -139,6 +143,101 @@ def terms_condition_user():
     if 'logged_in' not in session:
         return redirect(url_for('terms_condition'))
     return render_template("terms-condition-user.html")
+
+import os
+
+def send_password_reset_email(email, reset_url):
+    import os
+    import logging
+    from jinja2 import Template
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail as SendGridMail
+
+    # Absolute path to the template
+    template_path = os.path.join(app.root_path, 'templates', 'reset_password_email.html')
+    logging.debug(f"Template path: {template_path}")
+
+    try:
+        with open(template_path, 'r') as file:
+            html_template = file.read()
+        logging.debug("Template read successfully")
+    except Exception as e:
+        logging.error(f"Error reading email template: {e}")
+        return
+
+    # Create a Jinja2 Template
+    template = Template(html_template)
+    
+    # Create the email content
+    html_content = template.render(reset_url=reset_url)
+    logging.debug("Email content created successfully")
+
+    # Create the email message
+    message = SendGridMail(
+        from_email='matimatech@gmail.com',
+        to_emails=email,
+        subject='Permintaan Pergantian Password',
+        html_content=html_content
+    )
+
+    try:
+        sg = SendGridAPIClient(app.config['SENDGRID_API_KEY'])
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+    except Exception as e:
+        logging.error(f"Error sending email: {e}")
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+    except:
+        flash('Link tidak valid atau telah kedaluwarsa.', 'error')
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        new_password = request.form['password']
+
+        if not is_strong_password(new_password):
+            flash('Password harus memiliki minimal 8 karakter, termasuk huruf besar, huruf kecil, angka, dan simbol.', 'error')
+            return redirect(url_for('reset_password', token=token))
+
+        hashed_password = hash_password(new_password)
+
+        db, cur = get_db()
+        cur.execute("UPDATE users SET password = %s WHERE email = %s", (hashed_password, email))
+        db.commit()
+        db.close()
+
+        flash('Password berhasil diubah. Silakan login dengan password baru Anda.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('reset-password.html')
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+
+        db, cur = get_db()
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        db.close()
+
+        if user:
+            token = serializer.dumps(email, salt='password-reset-salt')
+            reset_url = url_for('reset_password', token=token, _external=True)
+            send_password_reset_email(email, reset_url)
+            flash('Link untuk mengatur ulang password telah dikirim ke email Anda.', 'success')
+        else:
+            flash('Email tidak terdaftar.', 'error')
+
+        return redirect(url_for('forgot_password'))
+
+    return render_template('forgot-password.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -485,7 +584,7 @@ def classify():
         logging.debug(f"Data Input for Prediction: {input_data}")
         
         try:
-            transformed_data = rfe_transformer.transform(input_data)
+            transformed_data = rfe_rf_transformer.transform(input_data)
             logging.debug(f"Transformed Data: {transformed_data}")
         except Exception as e:
             logging.error(f"Error during data transformation: {e}")
@@ -493,7 +592,7 @@ def classify():
             return redirect(url_for('classify'))
 
         try:
-            prediction = svm_model_rfe.predict(transformed_data)[0]
+            prediction = rf_model_rfe.predict(transformed_data)[0]
             logging.debug(f"Prediction Result: {prediction}")
         except Exception as e:
             logging.error(f"Error during model prediction: {e}")
