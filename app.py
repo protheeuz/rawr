@@ -1,5 +1,8 @@
+from flask import Flask, render_template, request, redirect, url_for, session
+import os
+import logging
+import secrets
 from dotenv import load_dotenv
-from flask import Flask, get_flashed_messages, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from flask_sendgrid import SendGrid
 from sendgrid import SendGridAPIClient
@@ -7,23 +10,31 @@ from sendgrid.helpers.mail import Mail as SendGridMail
 from werkzeug.utils import secure_filename
 from jinja2 import Template
 from itsdangerous import URLSafeTimedSerializer
-import logging
-import secrets
-import re
-import os
-import random
 import MySQLdb
 import hashlib
 import pandas as pd
 import pickle
+import random
+
+### SETUP-SETUP YANG DIBUTUHKAN PADA PROJECT ###
 
 load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(8))
 serializer = URLSafeTimedSerializer(app.secret_key)
-app.config['UPLOAD_FOLDER_USERS'] = 'static/assets/img/users'
-app.config['UPLOAD_FOLDER_ADMINS'] = 'static/assets/img/admins'
+
+# Path absolut ke direktori aplikasi
+base_dir = os.path.abspath(os.path.dirname(__file__))
+
+app.config['UPLOAD_FOLDER_USERS'] = os.path.join(base_dir, 'static/assets/img/users')
+app.config['UPLOAD_FOLDER_ADMINS'] = os.path.join(base_dir, 'static/assets/img/admins')
+
+# Log untuk memastikan jalur konfigurasi benar
+logging.basicConfig(level=logging.DEBUG)
+logging.debug(f"UPLOAD_FOLDER_USERS: {app.config['UPLOAD_FOLDER_USERS']}")
+logging.debug(f"UPLOAD_FOLDER_ADMINS: {app.config['UPLOAD_FOLDER_ADMINS']}")
 
 # Konfigurasi MySQL
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
@@ -40,24 +51,18 @@ app.config['MAIL_USERNAME'] = 'apikey'
 mysql = MySQL(app)
 sg = SendGrid(app)
 
+### FUNGSI ###
+
 # Muat model dan transformer RFE
-with open('./models/rf_model_rfe.pkl', 'rb') as model_file:
+with open(os.path.join(base_dir, 'models', 'rf_model_rfe.pkl'), 'rb') as model_file:
     rf_model_rfe = pickle.load(model_file)
 
-with open('./models/rfe_rf_transformer.pkl', 'rb') as transformer_file:
+with open(os.path.join(base_dir, 'models', 'rfe_rf_transformer.pkl'), 'rb') as transformer_file:
     rfe_rf_transformer = pickle.load(transformer_file)
-    
-def load_model_and_transformer():
-    global svm_model_rfe, rfe_transformer
-    try:
-        with open('./models/svm_model_rfe.pkl', 'rb') as f:
-            svm_model_rfe = pickle.load(f)
-        with open('./models/rfe_transformer.pkl', 'rb') as f:
-            rfe_transformer = pickle.load(f)
-    except Exception as e:
-        logging.error(f"Error loading model or transformer: {e}")
 
-load_model_and_transformer()
+# Muat model SVM
+with open(os.path.join(base_dir, 'models', 'svm_model.pkl'), 'rb') as model_file:
+    svm_model = pickle.load(model_file)
 
 # Fungsi untuk membuat koneksi ke database
 def get_db():
@@ -84,7 +89,9 @@ def is_strong_password(password):
 
 # Fungsi untuk mengirim kode verifikasi ke email
 def send_verification_code(email, verification_code):
-    with open('templates/verification_email.html', 'r') as file:
+    template_path = os.path.join(base_dir, 'templates', 'verification_email.html')
+    
+    with open(template_path, 'r') as file:
         html_template = file.read()
 
     template = Template(html_template)
@@ -113,6 +120,16 @@ def convert_to_float(value):
     except ValueError:
         return float(value)
     
+# Fungsi untuk melakukan prediksi dan mendapatkan confidence
+def mendapatkan_confidence(model, transformed_data):
+    prediction = model.predict(transformed_data)[0]
+    confidence = max(model.predict_proba(transformed_data)[0]) * 100
+    return prediction, confidence
+## Random forest: Rujukan Rumah Sakit 87%
+## SVM: Rawat Jalan 75%
+
+#### ROUTING #####
+
 @app.route('/')
 def home():
     if 'logged_in' in session:
@@ -144,17 +161,8 @@ def terms_condition_user():
         return redirect(url_for('terms_condition'))
     return render_template("terms-condition-user.html")
 
-import os
-
 def send_password_reset_email(email, reset_url):
-    import os
-    import logging
-    from jinja2 import Template
-    from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import Mail as SendGridMail
-
-    # Absolute path to the template
-    template_path = os.path.join(app.root_path, 'templates', 'reset_password_email.html')
+    template_path = os.path.join(base_dir, 'templates', 'reset_password_email.html')
     logging.debug(f"Template path: {template_path}")
 
     try:
@@ -270,7 +278,7 @@ def login():
                 logging.debug("Incorrect password")
                 flash('Password salah, silakan coba lagi.', 'error')
         else:
-            logging.debug("Email not registered")
+            logging.debug("Email tidak terdaftar")
             flash('Email tidak terdaftar, silakan hubungi Admin', 'error')
 
     return render_template('login.html')
@@ -392,6 +400,14 @@ def user_register():
         password = request.form['password']
         qualification = request.form['qualification']
 
+        db, cur = get_db()
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        existing_user = cur.fetchone()
+        if existing_user:
+            flash('Email sudah terdaftar.', 'error')
+            return redirect(url_for('user_register'))
+        db.close()
+
         if not name or not email or not password:
             flash('Semua field harus diisi.', 'error')
             return redirect(url_for('user_register'))
@@ -459,7 +475,7 @@ def verify():
             return redirect(url_for('verify'))
 
     return render_template('verify.html')
-
+    
 @app.route('/admin-profile-settings', methods=['GET', 'POST'])
 def admin_profile_settings():
     user_email = session.get('user_email')
@@ -477,19 +493,27 @@ def admin_profile_settings():
 
     elif request.method == 'POST':
         name = request.form['name']
-        kualifikasi = request.form['qualification']
+        qualification = request.form['qualification']
         profile_picture = None
 
         if 'photo' in request.files:
             photo = request.files['photo']
             if photo.filename != '':
                 filename = secure_filename(user_email + os.path.splitext(photo.filename)[1])
-                photo.save(os.path.join(app.config['UPLOAD_FOLDER_ADMINS'], filename))
+                # Pastikan direktori ada
+                admin_img_dir = app.config['UPLOAD_FOLDER_ADMINS']
+                if not os.path.exists(admin_img_dir):
+                    os.makedirs(admin_img_dir)
+                # Log untuk debug
+                logging.debug(f"Saving photo to: {os.path.join(admin_img_dir, filename)}")
+                print(f"Saving photo to: {os.path.join(admin_img_dir, filename)}")
+                photo.save(os.path.join(admin_img_dir, filename))
                 profile_picture = filename
+
         try:
             db, cur = get_db()
             update_query = "UPDATE users SET name = %s, qualification = %s WHERE email = %s"
-            cur.execute(update_query, (name, kualifikasi, user_email))
+            cur.execute(update_query, (name, qualification, user_email))
             db.commit()
 
             if profile_picture:
@@ -504,12 +528,9 @@ def admin_profile_settings():
             db.close()
 
         session['user_name'] = name
-        session['user_qualification'] = kualifikasi
+        session['user_qualification'] = qualification
 
         return redirect(url_for('admin_profile_settings'))
-
-
-
 
 
 @app.route('/user-profile-settings', methods=['GET', 'POST'])
@@ -536,7 +557,14 @@ def user_profile_settings():
             photo = request.files['photo']
             if photo.filename != '':
                 filename = secure_filename(user_email + os.path.splitext(photo.filename)[1])
-                photo.save(os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename))
+                # Pastikan direktori ada
+                user_img_dir = os.path.join(app.config['UPLOAD_FOLDER_USERS'])
+                if not os.path.exists(user_img_dir):
+                    os.makedirs(user_img_dir)
+                # Log untuk debug
+                logging.debug(f"Saving photo to: {os.path.join(user_img_dir, filename)}")
+                print(f"Saving photo to: {os.path.join(user_img_dir, filename)}")
+                photo.save(os.path.join(user_img_dir, filename))
                 profile_picture = filename
 
         try:
@@ -560,7 +588,6 @@ def user_profile_settings():
         session['user_qualification'] = qualification
 
         return redirect(url_for('user_profile_settings'))
-
 
 @app.route('/classify', methods=['GET', 'POST'])
 def classify():
@@ -592,20 +619,24 @@ def classify():
             return redirect(url_for('classify'))
 
         try:
-            prediction = rf_model_rfe.predict(transformed_data)[0]
-            logging.debug(f"Prediction Result: {prediction}")
+            rf_prediction, rf_confidence = mendapatkan_confidence(rf_model_rfe, transformed_data)
+            logging.debug(f"Random Forest Prediction: {rf_prediction}, Confidence: {rf_confidence}")
+            
+            svm_prediction, svm_confidence = mendapatkan_confidence(svm_model, transformed_data)
+            logging.debug(f"SVM Prediction: {svm_prediction}, Confidence: {svm_confidence}")
         except Exception as e:
             logging.error(f"Error during model prediction: {e}")
             flash('Terjadi kesalahan saat memproses prediksi.', 'error')
             return redirect(url_for('classify'))
 
-        result = "Rujukan Rumah Sakit" if prediction == 1 else "Rawat Jalan"
+        rf_result = "Rujukan Rumah Sakit" if rf_prediction == 1 else "Rawat Jalan"
+        svm_result = "Rujukan Rumah Sakit" if svm_prediction == 1 else "Rawat Jalan"
 
         db, cur = get_db()
         try:
             cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
                         (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'], 
-                         data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], result))
+                         data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], rf_result))
             db.commit()
         except Exception as e:
             logging.error(f"Error during database insertion: {e}")
@@ -613,7 +644,9 @@ def classify():
         finally:
             db.close()
 
-        return render_template('classify.html', result=result, user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
+        return render_template('classify.html', rf_result=rf_result, rf_confidence=rf_confidence, 
+                               svm_result=svm_result, svm_confidence=svm_confidence, 
+                               user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 
     return render_template('classify.html')
 
