@@ -26,13 +26,13 @@
                             <span></span>
                         </span>
                     </a>
-                    <a href="/index" class="navbar-brand logo">
+                    <a href="/dashboard" class="navbar-brand logo">
                         <img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo">
                     </a>
                 </div>
                 <div class="main-menu-wrapper">
                     <div class="menu-header">
-                        <a href="/index" class="menu-logo">
+                        <a href="/dashboard" class="menu-logo">
                             <img src="../static/assets/img/logo.png" class="img-fluid" alt="Logo">
                         </a>
                         <a id="menu_close" class="menu-close" href="javascript:void(0);">
@@ -221,44 +221,44 @@
                                 <div class="card">
                                     <div class="card-body">
                                         <h4 class="card-title">Data Pasien</h4>
-                                        <div class="table-responsive">
-                                            <table class="table table-striped">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Nama</th>
-                                                        <th>Haematocrit</th>
-                                                        <th>Haemoglobins</th>
-                                                        <th>Erythrocyte</th>
-                                                        <th>Leucocyte</th>
-                                                        <th>Thrombocyte</th>
-                                                        <th>Mch</th>
-                                                        <th>Mchc</th>
-                                                        <th>Mcv</th>
-                                                        <th>Umur</th>
-                                                        <th>Jenis Kelamin</th>
-                                                        <th>Hasil Klasifikasi</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for patient in patients %}
-                                                    <tr>
-                                                        <td>{{ patient['nama'] }}</td>
-                                                        <td>{{ patient['haematocrit'] }}</td>
-                                                        <td>{{ patient['haemoglobins'] }}</td>
-                                                        <td>{{ patient['erythrocyte'] }}</td>
-                                                        <td>{{ patient['leucocyte'] }}</td>
-                                                        <td>{{ patient['thrombocyte'] }}</td>
-                                                        <td>{{ patient['mch'] }}</td>
-                                                        <td>{{ patient['mchc'] }}</td>
-                                                        <td>{{ patient['mcv'] }}</td>
-                                                        <td>{{ patient['umur'] }}</td>
-                                                        <td>{{ patient['jenis_kelamin'] }}</td>
-                                                        <td>{{ patient['hasil_klasifikasi'] }}</td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nama</th>
+                                                            <th>Haematocrit</th>
+                                                            <th>Haemoglobins</th>
+                                                            <th>Erythrocyte</th>
+                                                            <th>Leucocyte</th>
+                                                            <th>Thrombocyte</th>
+                                                            <th>Mch</th>
+                                                            <th>Mchc</th>
+                                                            <th>Mcv</th>
+                                                            <th>Umur</th>
+                                                            <th>Jenis Kelamin</th>
+                                                            <th>Hasil Klasifikasi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for patient in patients %}
+                                                        <tr>
+                                                            <td>{{ patient['nama'] }}</td>
+                                                            <td>{{ patient['haematocrit'] }}</td>
+                                                            <td>{{ patient['haemoglobins'] }}</td>
+                                                            <td>{{ patient['erythrocyte'] }}</td>
+                                                            <td>{{ patient['leucocyte'] }}</td>
+                                                            <td>{{ patient['thrombocyte'] }}</td>
+                                                            <td>{{ patient['mch'] }}</td>
+                                                            <td>{{ patient['mchc'] }}</td>
+                                                            <td>{{ patient['mcv'] }}</td>
+                                                            <td>{{ patient['umur'] }}</td>
+                                                            <td>{{ patient['jenis_kelamin'] }}</td>
+                                                            <td>{{ patient['hasil_klasifikasi'] }}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                     </div>
                                 </div>
                             </div>

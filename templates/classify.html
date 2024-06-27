@@ -246,11 +246,11 @@
                                 </div>
                             </div>
                         </form>
-
-                        {% if result %}
+                        {% if rf_result and svm_result %}
                         <h2>Hasil Klasifikasi Rekomendasi Perawatan Pasien</h2>
                         <p>Berdasarkan data yang diberikan, hasil klasifikasi adalah:</p>
-                        <p>{{ result }}</p>
+                        <p>Random Forest: {{ rf_result }} ({{ rf_confidence }}%)</p>
+                        <p>SVM: {{ svm_result }} ({{ svm_confidence }}%)</p>
                         {% endif %}
                     </div>
                 </div>

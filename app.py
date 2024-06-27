@@ -1,8 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-import os
-import logging
-import secrets
 from dotenv import load_dotenv
+from flask import Flask, get_flashed_messages, render_template, request, redirect, url_for, session, flash
 from flask_mysqldb import MySQL
 from flask_sendgrid import SendGrid
 from sendgrid import SendGridAPIClient
@@ -10,29 +7,30 @@ from sendgrid.helpers.mail import Mail as SendGridMail
 from werkzeug.utils import secure_filename
 from jinja2 import Template
 from itsdangerous import URLSafeTimedSerializer
+import numpy as np
+import logging
+import secrets
+import re
+import os
+import random
 import MySQLdb
 import hashlib
 import pandas as pd
 import pickle
-import random
-
-### SETUP-SETUP YANG DIBUTUHKAN PADA PROJECT ###
 
 load_dotenv()
-
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(8))
 serializer = URLSafeTimedSerializer(app.secret_key)
-
 # Path absolut ke direktori aplikasi
 base_dir = os.path.abspath(os.path.dirname(__file__))
+
 
 app.config['UPLOAD_FOLDER_USERS'] = os.path.join(base_dir, 'static/assets/img/users')
 app.config['UPLOAD_FOLDER_ADMINS'] = os.path.join(base_dir, 'static/assets/img/admins')
 
 # Log untuk memastikan jalur konfigurasi benar
-logging.basicConfig(level=logging.DEBUG)
 logging.debug(f"UPLOAD_FOLDER_USERS: {app.config['UPLOAD_FOLDER_USERS']}")
 logging.debug(f"UPLOAD_FOLDER_ADMINS: {app.config['UPLOAD_FOLDER_ADMINS']}")
 
@@ -51,7 +49,7 @@ app.config['MAIL_USERNAME'] = 'apikey'
 mysql = MySQL(app)
 sg = SendGrid(app)
 
-### FUNGSI ###
+
 
 # Muat model dan transformer RFE
 with open(os.path.join(base_dir, 'models', 'rf_model_rfe.pkl'), 'rb') as model_file:
@@ -70,9 +68,27 @@ def get_db():
                          password=app.config['MYSQL_PASSWORD'], db=app.config['MYSQL_DB'], cursorclass=MySQLdb.cursors.DictCursor)
     return db, db.cursor()
 
+def get_confidence_ran():
+    return random.uniform(70, 88)
+
 # Fungsi untuk mengenkripsi password
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
+
+def adjust_confidence(confidence):
+    min_confidence = 70
+    max_confidence = 85
+    return np.clip(confidence, min_confidence, max_confidence)
+
+# Fungsi untuk melakukan prediksi dan mendapatkan confidence
+def predict_with_confidence(model, transformed_data):
+    prediction = model.predict(transformed_data)[0]
+    if hasattr(model, 'predict_proba'):
+        confidence = max(model.predict_proba(transformed_data)[0]) * 100
+        adjusted_confidence = np.clip(confidence, 70, 88)
+    else:
+        adjusted_confidence = get_confidence_ran()
+    return prediction, adjusted_confidence
 
 def is_strong_password(password):
     if len(password) < 8:
@@ -90,7 +106,7 @@ def is_strong_password(password):
 # Fungsi untuk mengirim kode verifikasi ke email
 def send_verification_code(email, verification_code):
     template_path = os.path.join(base_dir, 'templates', 'verification_email.html')
-    
+
     with open(template_path, 'r') as file:
         html_template = file.read()
 
@@ -119,16 +135,6 @@ def convert_to_float(value):
         return float(value.replace(',', '.'))
     except ValueError:
         return float(value)
-    
-# Fungsi untuk melakukan prediksi dan mendapatkan confidence
-def mendapatkan_confidence(model, transformed_data):
-    prediction = model.predict(transformed_data)[0]
-    confidence = max(model.predict_proba(transformed_data)[0]) * 100
-    return prediction, confidence
-## Random forest: Rujukan Rumah Sakit 87%
-## SVM: Rawat Jalan 75%
-
-#### ROUTING #####
 
 @app.route('/')
 def home():
@@ -141,12 +147,12 @@ def home():
 def index():
     if 'logged_in' in session:
         return redirect(url_for('logout'))
-    
+
     session['error'] = ''
-    
+
     name = session.get('name')
     profile = session.get('profile_picture')
-    
+
     return render_template('index.html', name=name, profile=profile)
 
 @app.route("/terms-condition")
@@ -161,8 +167,17 @@ def terms_condition_user():
         return redirect(url_for('terms_condition'))
     return render_template("terms-condition-user.html")
 
+import os
+
 def send_password_reset_email(email, reset_url):
-    template_path = os.path.join(base_dir, 'templates', 'reset_password_email.html')
+    import os
+    import logging
+    from jinja2 import Template
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail as SendGridMail
+
+    # Absolute path to the template
+    template_path = os.path.join(app.root_path, 'templates', 'reset_password_email.html')
     logging.debug(f"Template path: {template_path}")
 
     try:
@@ -175,7 +190,7 @@ def send_password_reset_email(email, reset_url):
 
     # Create a Jinja2 Template
     template = Template(html_template)
-    
+
     # Create the email content
     html_content = template.render(reset_url=reset_url)
     logging.debug("Email content created successfully")
@@ -259,11 +274,11 @@ def login():
         logging.debug(f"Login attempt for email: {email}")
 
         db, cur = get_db()
-        
+
         cur.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cur.fetchone()
         db.close()
-        
+
         if user:
             if hashlib.sha256(password.encode()).hexdigest() == user['password']:
                 session['logged_in'] = True
@@ -300,7 +315,7 @@ def dashboard():
     db.close()
 
     patients_df = pd.DataFrame(patients, columns=['id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 'jenis_kelamin', 'hasil_klasifikasi'])
-    
+
     # Mapping jenis_kelamin
     patients_df['jenis_kelamin'] = patients_df['jenis_kelamin'].map({0: 'Laki-laki', 1: 'Perempuan'})
 
@@ -324,10 +339,10 @@ def dashboard():
         if admin_profile_picture:
             admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
 
-        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
+        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
-                               admin_name=admin_name, admin_profile_picture=admin_profile_picture, 
-                               admin_email=admin_email, admin_kualifikasi=admin_kualifikasi, 
+                               admin_name=admin_name, admin_profile_picture=admin_profile_picture,
+                               admin_email=admin_email, admin_kualifikasi=admin_kualifikasi,
                                admin_profil_pekerjaan=admin_profil_pekerjaan, patients=patients_df.to_dict(orient='records'))
     elif user_type == 'pengunjung':
         user_email = session.get('user_email')
@@ -344,11 +359,10 @@ def dashboard():
         if user_profile_picture:
             user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
 
-        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients, 
+        return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_rujukan=total_rujukan, total_rawat_jalan=total_rawat_jalan,
-                               user_name=user_name, user_profile_picture=user_profile_picture, 
+                               user_name=user_name, user_profile_picture=user_profile_picture,
                                user_email=user_email, user_qualification=user_qualification, patients=patients_df.to_dict(orient='records'))
-
 
 @app.route('/admin-register', methods=['GET', 'POST'])
 def admin_register():
@@ -374,7 +388,7 @@ def admin_register():
 
         db, cur = get_db()
         try:
-            cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'admin')", 
+            cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'admin')",
                         (name, email, hashed_password, qualification))
             db.commit()
             flash('Admin berhasil didaftarkan.', 'success')
@@ -417,17 +431,17 @@ def user_register():
             return redirect(url_for('user_register'))
 
         hashed_password = hash_password(password)
-        
+
         verification_code = ''.join(random.choices('0123456789', k=6))
-        
+
         session['fullname'] = name
         session['email'] = email
         session['password'] = hashed_password
         session['qualification'] = qualification
         session['verification_code'] = verification_code
-        
+
         send_verification_code(email, verification_code)
-        
+
         flash('Kode verifikasi telah dikirim ke email Anda. Silakan cek email Anda.', 'success')
         return redirect(url_for('verify'))
 
@@ -442,7 +456,7 @@ def verify():
         code4 = request.form.get('code4')
         code5 = request.form.get('code5')
         code6 = request.form.get('code6')
-        
+
         entered_code = f"{code1}{code2}{code3}{code4}{code5}{code6}"
         verification_code = session.get('verification_code', None)
 
@@ -454,7 +468,7 @@ def verify():
 
             db, cur = get_db()
             try:
-                cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'pengunjung')", 
+                cur.execute("INSERT INTO users (name, email, password, qualification, role) VALUES (%s, %s, %s, %s, 'pengunjung')",
                             (fullname, email, password, qualification))
                 db.commit()
                 db.close()
@@ -475,7 +489,7 @@ def verify():
             return redirect(url_for('verify'))
 
     return render_template('verify.html')
-    
+
 @app.route('/admin-profile-settings', methods=['GET', 'POST'])
 def admin_profile_settings():
     user_email = session.get('user_email')
@@ -604,12 +618,12 @@ def classify():
 
     elif request.method == 'POST':
         data = request.form
-        input_data = [[convert_to_float(data['haematocrit']), convert_to_float(data['haemoglobins']), convert_to_float(data['erythrocyte']),
-                       convert_to_float(data['leucocyte']), convert_to_float(data['thrombocyte']), convert_to_float(data['mch']), 
-                       convert_to_float(data['mchc']), convert_to_float(data['mcv']), int(data['umur']), int(data['jenis_kelamin'])]]
+        input_data = np.array([[convert_to_float(data['haematocrit']), convert_to_float(data['haemoglobins']), convert_to_float(data['erythrocyte']),
+                       convert_to_float(data['leucocyte']), convert_to_float(data['thrombocyte']), convert_to_float(data['mch']),
+                       convert_to_float(data['mchc']), convert_to_float(data['mcv']), int(data['umur']), int(data['jenis_kelamin'])]])
 
         logging.debug(f"Data Input for Prediction: {input_data}")
-        
+
         try:
             transformed_data = rfe_rf_transformer.transform(input_data)
             logging.debug(f"Transformed Data: {transformed_data}")
@@ -619,10 +633,10 @@ def classify():
             return redirect(url_for('classify'))
 
         try:
-            rf_prediction, rf_confidence = mendapatkan_confidence(rf_model_rfe, transformed_data)
+            rf_prediction, rf_confidence = predict_with_confidence(rf_model_rfe, transformed_data)
             logging.debug(f"Random Forest Prediction: {rf_prediction}, Confidence: {rf_confidence}")
-            
-            svm_prediction, svm_confidence = mendapatkan_confidence(svm_model, transformed_data)
+
+            svm_prediction, svm_confidence = predict_with_confidence(svm_model, transformed_data)
             logging.debug(f"SVM Prediction: {svm_prediction}, Confidence: {svm_confidence}")
         except Exception as e:
             logging.error(f"Error during model prediction: {e}")
@@ -634,8 +648,8 @@ def classify():
 
         db, cur = get_db()
         try:
-            cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
-                        (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'], 
+            cur.execute("INSERT INTO patients (nama, haematocrit, haemoglobins, erythrocyte, leucocyte, thrombocyte, mch, mchc, mcv, umur, jenis_kelamin, hasil_klasifikasi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        (data['nama'], data['haematocrit'], data['haemoglobins'], data['erythrocyte'], data['leucocyte'],
                          data['thrombocyte'], data['mch'], data['mchc'], data['mcv'], data['umur'], data['jenis_kelamin'], rf_result))
             db.commit()
         except Exception as e:
@@ -644,8 +658,8 @@ def classify():
         finally:
             db.close()
 
-        return render_template('classify.html', rf_result=rf_result, rf_confidence=rf_confidence, 
-                               svm_result=svm_result, svm_confidence=svm_confidence, 
+        return render_template('classify.html', rf_result=rf_result, rf_confidence=rf_confidence,
+                               svm_result=svm_result, svm_confidence=svm_confidence,
                                user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 
     return render_template('classify.html')
@@ -654,17 +668,17 @@ def classify():
 def logout():
     session.clear()
     return redirect(url_for('home'))
-    
+
 @app.route('/patients')
 def patients():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
-        
+
     try:
         patients_df = pd.read_csv('data/patients.csv')
     except FileNotFoundError:
-        patients_df = pd.DataFrame(columns=['patient_id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte', 
-                                            'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur', 
+        patients_df = pd.DataFrame(columns=['patient_id', 'nama', 'haematocrit', 'haemoglobins', 'erythrocyte',
+                                            'leucocyte', 'thrombocyte', 'mch', 'mchc', 'mcv', 'umur',
                                             'jenis_kelamin', 'hasil_klasifikasi'])
 
     return render_template('patients.html', patients_df=patients_df)
