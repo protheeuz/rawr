@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import pickle
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import load_model
 import base64
@@ -8,19 +9,11 @@ import base64
 # Muat model CNN untuk deteksi kanker
 base_dir = os.path.abspath(os.path.dirname(__file__))
 cnn_model_path = os.path.join(base_dir, '..', 'models', 'model_kanker_payudara.keras')
+label_pickle_path = os.path.join(base_dir, '..', 'models', 'label_mapping.pkl')
 
-# Simpan gambar dengan nama unik
-output_img_path = os.path.join(base_dir, 'static', 'assets', 'img', 'detections', 'detected_image.png')
-print(f"Image saved at: {output_img_path}")
-if os.path.exists(output_img_path):
-    print(f"Image exists: {output_img_path}")
-else:
-    print(f"Image not found at: {output_img_path}")
-
-
-if not os.path.exists(os.path.dirname(output_img_path)):
-    os.makedirs(os.path.dirname(output_img_path))
-    print(f"Directory created: {os.path.dirname(output_img_path)}")
+# Muat label kelas dari pickle
+with open(label_pickle_path, "rb") as f:
+    label_mapping = pickle.load(f)
 
 # Muat model tanpa optimizer, untuk prediksi
 cnn_model = load_model(cnn_model_path, compile=False)
@@ -46,13 +39,9 @@ def predict_with_confidence(img_path, user_email):
     prediksi = cnn_model.predict(img_array)
     probabilitas_kanker = prediksi[0][0]  # Ambil probabilitas kelas 1 (kanker)
 
-    # Tentukan label dan warna berdasarkan prediksi
-    if probabilitas_kanker >= 0.5:
-        label = "Kanker (Ganas)"
-        warna = (0, 0, 255)  # Merah untuk kanker
-    else:
-        label = "Tidak Kanker (Jinak)"
-        warna = (0, 255, 0)  # Hijau untuk non-kanker
+    # Tentukan label dari pickle
+    label = label_mapping[1] if probabilitas_kanker >= 0.5 else label_mapping[0]
+    warna = (0, 0, 255) if probabilitas_kanker >= 0.5 else (0, 255, 0)
 
     tinggi, lebar, _ = img_cv.shape
     padding = 100
