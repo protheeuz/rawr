@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
-    <title>Verifikasi - Sistem Rekomendasi Perawatan - Puskesmas Pulogadung</title>
+    <title>Verifikasi - Sistem Rekomendasi Perawatan - Klasifikasi Kanker Payudara</title>
     
     <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon">
     
@@ -36,7 +36,7 @@
                                 <div class="login-title">
                                     <h3>Verifikasi Email</h3>
                                 </div>
-                                <form action="{{ url_for('verify') }}" method="POST">
+                                <form action="{{ url_for('auth.verify') }}" method="POST">
                                     <div class="form-group">
                                         <label for="verification_code">Masukkan Kode Verifikasi:</label>
                                         <div class="d-flex">
@@ -76,7 +76,7 @@
                                 <img src="../static/assets/img/logo.png" alt="logo">
                             </div></a>
                             <div class="footer-about-content">
-                                <p>Puskesmas Kecamatan Pulogadung ialah Puskesmas pembina tingkat Kecamatan Pulogadung dan merupakan unit pelaksana teknis kesehatan di bawah supervisi Suku Dinas Kesehatan Jakarta Timur.</p>
+                                <p>Sistem Klasifikasi Kanker Payudara ialah platform untuk mendeteksi kanker payudara menggunakan data MRI yang dikhususkan untuk tugas akhir.</p>
                             </div>
                         </div>
                     </div>
@@ -85,13 +85,13 @@
                             <h2 class="footer-title">Kontak Kami</h2>
                             <div class="footer-contact-info">
                                 <div class="footer-address">
-                                    <p><i class="feather-map-pin"></i> Pulogadung, Jakarta</p>
+                                    <p><i class="feather-map-pin"></i> Duren Sawit, Jakarta</p>
                                 </div>
                                 <div class="footer-address">
                                     <p><i class="feather-phone-call"></i> +62 21489-0519</p>
                                 </div>
                                 <div class="footer-address mb-0">
-                                    <p><i class="feather-mail"></i> puskesmas.pulogadung@jakarta.go.id</p>
+                                    <p><i class="feather-mail"></i> puskesmas.durensawit@jakarta.go.id</p>
                                 </div>
                             </div>
                         </div>

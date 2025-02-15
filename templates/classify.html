@@ -2,7 +2,7 @@
 <html lang="en" style="transform: none" class="fontawesome-i2svg-active fontawesome-i2svg-complete">
 <head>
     <meta charset="utf-8" />
-    <title>Classify - Puskesmas Pulogadung</title>
+    <title>Classify - Klasifikasi Kanker Otak</title>
     <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
@@ -63,9 +63,6 @@
                                             </div>
                                         </div>
                                         <a class="dropdown-item" href="/dashboard">Dashboard</a>
-                                        {% if user_type == 'admin' %}
-                                        <a class="dropdown-item" href="/admin-profile-settings">Pengaturan Admin</a>
-                                        {% endif %}
                                         <a class="dropdown-item" href="/logout">Keluar</a>
                                     </div>
                                 </li>
@@ -89,9 +86,6 @@
                                         </a>
                                         <div class="profile-det-info">
                                             <h3>{{ session['user_name'] }}</h3>
-                                        </div>
-                                        <div class="patient-details">
-                                            <h5 class="mb-0">{{ session['user_qualification'] }}</h5>
                                         </div>
                                     </div>
                                 </div>
@@ -151,7 +145,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <h6>Silakan isi data di bawah untuk klasifikasi rekomendasi perawatan pasien</h6>
+                                    <h6>Silakan unggah gambar untuk Deteksi kanker payudara</h6>
                                     {% with messages = get_flashed_messages(with_categories=true) %}
                                     {% if messages %}
                                     <div class="error-message" style="padding-top: 12px">
@@ -165,7 +159,8 @@
                             </div>
                         </div>
 
-                        <form method="POST" action="/classify">
+                        <!-- Form untuk Upload Gambar -->
+                        <form method="POST" action="/classify" enctype="multipart/form-data">
                             <div class="row form-group">
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -173,84 +168,36 @@
                                         <input type="text" name="nama" class="form-control" placeholder="Masukkan Nama" required /><br />
                                     </div>
                                 </div>
+                                <!-- Input Gambar -->
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label>Haematocrit<span class="text-danger">*</span></label>
-                                        <input type="text" name="haematocrit" class="form-control" placeholder="Masukkan Haematocrit" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Haemoglobins<span class="text-danger">*</span></label>
-                                        <input type="text" name="haemoglobins" class="form-control" placeholder="Masukkan Haemoglobins" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Erythrocyte<span class="text-danger">*</span></label>
-                                        <input type="text" name="erythrocyte" class="form-control" placeholder="Masukkan Erythrocyte" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Leucocyte<span class="text-danger">*</span></label>
-                                        <input type="text" name="leucocyte" class="form-control" placeholder="Masukkan Leucocyte" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Thrombocyte<span class="text-danger">*</span></label>
-                                        <input type="text" name="thrombocyte" class="form-control" placeholder="Masukkan Thrombocyte" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Mch<span class="text-danger">*</span></label>
-                                        <input type="text" name="mch" class="form-control" placeholder="Masukkan Mch" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Mchc<span class="text-danger">*</span></label>
-                                        <input type="text" name="mchc" class="form-control" placeholder="Masukkan Mchc" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Mcv<span class="text-danger">*</span></label>
-                                        <input type="text" name="mcv" class="form-control" placeholder="Masukkan Mcv" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Umur<span class="text-danger">*</span></label>
-                                        <input type="text" name="umur" class="form-control" placeholder="Masukkan Umur" required /><br />
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Jenis Kelamin<span class="text-danger">*</span></label>
-                                        <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
-                                            <option value="0">Laki-laki</option>
-                                            <option value="1">Perempuan</option>
-                                        </select>
-                                        <br />
+                                        <label>Unggah Gambar Pasien<span class="text-danger">*</span></label>
+                                        <input type="file" name="image" class="form-control" accept="image/*" required /><br />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <button type="submit" class="btn btn-primary prime-btn" value="Update">
-                                            Proses Klasifikasi
+                                            Proses Deteksi
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </form>
-                        {% if rf_result and svm_result %}
-                        <h2>Hasil Klasifikasi Rekomendasi Perawatan Pasien</h2>
-                        <p>Berdasarkan data yang diberikan, hasil klasifikasi adalah:</p>
-                        <p>Random Forest: {{ rf_result }} ({{ rf_confidence }}%)</p>
-                        <p>SVM: {{ svm_result }} ({{ svm_confidence }}%)</p>
+                        {% if result %}
+                        <h2>Hasil Deteksi Kanker Payudara</h2>
+                        <p>Berdasarkan gambar yang diunggah, hasil deteksinya adalah:</p>
+                        <p>Status: {{ result }} Confidence: {{ '%.4f'|format(confidence) }}%</p>
+
+                        <!-- Menampilkan gambar hasil deteksi -->
+                        <h3>Hasil Deteksi Gambar:</h3>
+                        <img src="data:image/png;base64,{{ img_base64 }}" alt="Hasil Deteksi" style="max-width: 100%; height: auto;">
+
+                        <!-- Tambahkan opsi untuk download gambar hasil deteksi -->
+                        <h3>Unduh Gambar Hasil Deteksi:</h3>
+                        <a href="{{ url_for('static', filename='assets/img/detections/' + email + '_detected_image.png') }}" download>
+                            <button class="btn btn-success">Download Gambar</button>
+                        </a>
                         {% endif %}
                     </div>
                 </div>

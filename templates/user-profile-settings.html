@@ -2,7 +2,7 @@
 <html lang="en" style="transform: none;" class="fontawesome-i2svg-active fontawesome-i2svg-complete">
 <head>
     <meta charset="utf-8">
-    <title>User Setting - Puskesmas Pulogadung</title>
+    <title>User Setting - Klasifikasi Kanker Payudara</title>
     <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
@@ -79,7 +79,7 @@
                                             </div>
                                         </div>
                                         <a class="dropdown-item" href="/dashboard">Dashboard</a>
-                                        <a class="dropdown-item" href="/user-profile-settings">Pengaturan User</a>
+                                        <a class="dropdown-item" href="{{ url_for('user_profile_settings') }}">Pengaturan User</a>
                                         <a class="dropdown-item" href="/logout">Keluar</a>
                                     </div>
                                 </li>
@@ -104,9 +104,6 @@
                                         <div class="profile-det-info">
                                             <h3>{{ user_name }}</h3>
                                         </div>
-                                        <div class="patient-details">
-                                            <h5 class="mb-0">{{ user_qualification }}</h5>
-                                        </div>
                                     </div>
                                 </div>
                                 <div class="dashboard-widget">
@@ -119,7 +116,7 @@
                                                 </a>
                                             </li>
                                             <li class="active">
-                                                <a href="/user-profile-settings">
+                                                <a href="{{ url_for('user_profile_settings') }}">
                                                     <svg class="svg-inline--fa fa-user-cog fa-w-20" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="user-cog" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" data-fa-i2svg="" style="width: 16px; height: 16px;"><path fill="currentColor" d="M610.5 373.3c2.6-14.1 2.6-28.5 0-42.6l25.8-14.9c3-1.7 4.3-5.2 3.3-8.5-6.7-21.6-18.2-41.2-33.2-57.4-2.3-2.5-6-3.1-9-1.4l-25.8 14.9c-10.9-9.3-23.4-16.5-36.9-21.3v-29.8c0-3.4-2.4-6.4-5.7-7.1-22.3-5-45-4.8-66.2 0-3.3.7-5.7 3.7-5.7 7.1v29.8c-13.5 4.8-26 12-36.9 21.3l-25.8-14.9c-2.9-1.7-6.7-1.1-9 1.4-15 16.2-26.5 35.8-33.2 57.4-1 3.3.4 6.8 3.3 8.5l25.8 14.9c-2.6 14.1-2.6 28.5 0 42.6l-25.8 14.9c-3 1.7-4.3 5.2-3.3 8.5 6.7 21.6 18.2 41.1 33.2 57.4 2.3 2.5 6 3.1 9 1.4l25.8-14.9c10.9 9.3 23.4 16.5 36.9 21.3v29.8c0 3.4 2.4 6.4 5.7 7.1 22.3 5 45 4.8 66.2 0 3.3-.7 5.7-3.7 5.7-7.1v-29.8c13.5-4.8 26-12 36.9-21.3l25.8 14.9c2.9 1.7 6.7 1.1 9-1.4 15-16.2 26.5-35.8 33.2-57.4 1-3.3-.4-6.8-3.3-8.5l-25.8-14.9zM496 400.5c-26.8 0-48.5-21.8-48.5-48.5s21.8-48.5 48.5-48.5 48.5 21.8 48.5 48.5-21.7 48.5-48.5 48.5zM224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm201.2 226.5c-2.3-1.2-4.6-2.6-6.8-3.9l-7.9 4.6c-6 3.4-12.8 5.3-19.6 5.3-10.9 0-21.4-4.6-28.9-12.6-18.3-19.8-32.3-43.9-40.2-69.6-5.5-17.7 1.9-36.4 17.9-45.7l7.9-4.6c-.1-2.6-.1-5.2 0-7.8l-7.9-4.6c-16-9.2-23.4-28-17.9-45.7.9-2.9 2.2-5.8 3.2-8.7-3.8-.3-7.5-1.2-11.4-1.2h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c10.1 0 19.5-3.2 27.2-8.5-1.2-3.8-2-7.7-2-11.8v-9.2z"></path></svg><!-- <i class="fas fa-user-cog"></i> Font Awesome fontawesome.com -->
                                                     <span>Pengaturan User</span>
                                                 </a>
@@ -146,14 +143,14 @@
                                             <div class="form-group">
                                                 <div class="change-avatar">
                                                     <div class="profile-img">
-                                                        <img id="preview-img" alt="Profile Update" src="../static/assets/img/users/{{ user_profile_picture | default('default_profile.png') }}">
+                                                        <img id="preview-img" alt="Profile Update" src="../static/assets/img/users/{{ user_profile_picture | default('default.png') }}">
                                                     </div>
                                                     <div class="upload-img">
                                                         <div class="change-photo-btn">
                                                             <span>
                                                                 <svg class="svg-inline--fa fa-upload fa-w-16 fa-xs" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="upload" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg="" style="width: 16px; height: 16px;">
                                                                     <path fill="currentColor" d="M296 384h-80c-13.3 0-24-10.7-24-24V192h-87.7c-17.8 0-26.7-21.5-14.1-34.1L242.3 5.7c7.5-7.5 19.8-7.5 27.3 0l152.2 152.2c12.6 12.6 3.7 34.1-14.1 34.1H320v168c0 13.3-10.7 24-24 24zm216-8v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h136v8c0 30.9 25.1 56 56 56h80c30.9 0 56-25.1 56-56v-8h136c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"></path>
-                                                                </svg><!-- <i class="fa fa-upload"></i> Font Awesome fontawesome.com -->
+                                                                </svg>
                                                                 Unggah Foto
                                                             </span>
                                                             <input type="file" id="photo" name="photo" accept="image/*" class="upload" onchange="previewImage(event)">
@@ -163,32 +160,16 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        {% with messages = get_flashed_messages(with_categories=true) %}
-                                        {% if messages %}
-                                        <div class="success" style="padding-top:12px">
-                                            {% for category, message in messages %}
-                                            <div class="{{ category }}">{{ message }}</div>
-                                            {% endfor %}
-                                        </div>
-                                        {% endif %}
-                                        {% endwith %}
                                         <div class="col-12 col-md-6">
                                             <div class="form-group">
                                                 <label>Email <span class="text-danger">*</span></label>
-                                                <input type="email" id="email" name="email" class="form-control" value="{{ user_email }}" readonly="">
+                                                <input type="email" id="email" name="email" class="form-control" value="{{ user_email }}" readonly>
                                             </div>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <div class="form-group">
                                                 <label>Nama Lengkap</label>
                                                 <input type="text" class="form-control" id="name" name="name" value="{{ user_name }}">
-                                            </div>
-                                        </div>
-                                        <!-- Kualifikasi -->
-                                        <div class="col-12 col-md-6">
-                                            <div class="form-group">
-                                                <label>Kualifikasi</label>
-                                                <input type="text" class="form-control" id="qualification" name="qualification" value="{{ user_qualification }}">
                                             </div>
                                         </div>
                                         <div class="submit-section">

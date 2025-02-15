@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Dashboard - Puskesmas Pulogadung</title>
+    <title>Dashboard - Klasifikasi Kanker Payudara</title>
     <link rel="shortcut icon" href="../static/assets/img/logo.png" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
@@ -51,7 +51,7 @@
                     <li class="nav-item dropdown has-arrow logged-item">
                         <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="user-img">
-                                <img class="rounded-circle" src="../static/assets/img/{{ 'admins' if user_type == 'admin' else 'users' }}/{{ session['user_profile_picture'] }}" width="31" alt="profile" style="vertical-align: middle;">
+                                <img class="rounded-circle" src="{{ '/static/assets/img/' + ('admins' if user_type == 'admin' else 'users') + '/' + (session['user_profile_picture'] if session.get('user_profile_picture') else 'default-profile.png') }}" width="31" alt="profile" style="vertical-align: middle;">
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
@@ -88,13 +88,10 @@
                             <div class="widget-profile pro-widget-content">
                                 <div class="profile-info-widget">
                                     <a href="#" class="booking-doc-img">
-                                        <img src="../static/assets/img/{{ 'admins' if user_type == 'admin' else 'users' }}/{{ session['user_profile_picture'] }}" alt="User Image">
+                                        <img src="{{ '/static/assets/img/' + ('admins' if user_type == 'admin' else 'users') + '/' + (session['user_profile_picture'] if session.get('user_profile_picture') else 'default-profile.png') }}" alt="User Image">
                                     </a>
                                     <div class="profile-det-info">
                                         <h3>{{ session['user_name'] }}</h3>
-                                        <div class="patient-details">
-                                            <h5 class="mb-0">{{ session['user_qualification'] }}</h5>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -172,6 +169,7 @@
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="col-xl-3 col-sm-6 col-12">
                                 <div class="card">
                                     <div class="card-body">
@@ -181,11 +179,11 @@
                                                 <i class="fe fe-money"></i>
                                             </span>
                                             <div class="dash-count">
-                                                <h3>{{ total_rujukan }}</h3>
+                                                <h3>{{ total_tumor_otak }}</h3>
                                             </div>
                                         </div>
                                         <div class="dash-widget-info">
-                                            <h6 class="text-muted">Pasien Rujukan</h6>
+                                            <h6 class="text-muted">Pasien Kanker Payudara</h6>
                                             <div class="progress progress-sm">
                                                 <div class="progress-bar bg-danger w-50"></div>
                                             </div>
@@ -193,6 +191,7 @@
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="col-xl-3 col-sm-6 col-12">
                                 <div class="card">
                                     <div class="card-body">
@@ -202,11 +201,11 @@
                                                 <i class="fe fe-folder"></i>
                                             </span>
                                             <div class="dash-count">
-                                                <h3>{{ total_rawat_jalan }}</h3>
+                                                <h3>{{ total_non_tumor_otak }}</h3>
                                             </div>
                                         </div>
                                         <div class="dash-widget-info">
-                                            <h6 class="text-muted">Rawat Jalan</h6>
+                                            <h6 class="text-muted">Pasien Non-Kanker Payudara</h6>
                                             <div class="progress progress-sm">
                                                 <div class="progress-bar bg-warning w-50"></div>
                                             </div>
@@ -215,55 +214,39 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- Tabel Data Patients -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h4 class="card-title">Data Pasien</h4>
+                            <!-- Tabel Riwayat Pendeteksian -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h4 class="card-title">Riwayat Pendeteksian</h4>
                                             <div class="table-responsive">
                                                 <table class="table table-striped">
                                                     <thead>
                                                         <tr>
-                                                            <th>Nama</th>
-                                                            <th>Haematocrit</th>
-                                                            <th>Haemoglobins</th>
-                                                            <th>Erythrocyte</th>
-                                                            <th>Leucocyte</th>
-                                                            <th>Thrombocyte</th>
-                                                            <th>Mch</th>
-                                                            <th>Mchc</th>
-                                                            <th>Mcv</th>
-                                                            <th>Umur</th>
-                                                            <th>Jenis Kelamin</th>
-                                                            <th>Hasil Klasifikasi</th>
+                                                            <th>Nama Pasien</th>
+                                                            <th>Hasil Pemeriksaan</th>
+                                                            <th>Skor Kepercayaan</th>
+                                                            <th>Waktu Pendeteksian</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {% for patient in patients %}
                                                         <tr>
                                                             <td>{{ patient['nama'] }}</td>
-                                                            <td>{{ patient['haematocrit'] }}</td>
-                                                            <td>{{ patient['haemoglobins'] }}</td>
-                                                            <td>{{ patient['erythrocyte'] }}</td>
-                                                            <td>{{ patient['leucocyte'] }}</td>
-                                                            <td>{{ patient['thrombocyte'] }}</td>
-                                                            <td>{{ patient['mch'] }}</td>
-                                                            <td>{{ patient['mchc'] }}</td>
-                                                            <td>{{ patient['mcv'] }}</td>
-                                                            <td>{{ patient['umur'] }}</td>
-                                                            <td>{{ patient['jenis_kelamin'] }}</td>
-                                                            <td>{{ patient['hasil_klasifikasi'] }}</td>
+                                                            <td>{{ patient['hasil_pemeriksaan'] }}</td>
+                                                            <td>{{ patient['confidence_score'] }}%</td>
+                                                            <td>{{ patient['created_at'] }}</td>
                                                         </tr>
                                                         {% endfor %}
                                                     </tbody>
                                                 </table>
                                             </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Akhir Tabel Data Patients -->
+                            <!-- Akhir Tabel Riwayat Pendeteksian -->
                     </div>
                 </div>
             </div>
