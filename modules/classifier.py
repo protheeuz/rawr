@@ -67,7 +67,6 @@ def predict_with_confidence(img_path, user_email):
         cv2.LINE_AA
     )
 
-    # Simpan gambar dengan nama unik berdasarkan email
     output_img_path = os.path.join(base_dir, 'static', 'assets', 'img', 'detections', f"{user_email}_detected_image.png")
     cv2.imwrite(output_img_path, img_cv)
 

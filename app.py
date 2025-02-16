@@ -152,12 +152,12 @@ def dashboard():
     total_patients = cur.fetchone()['total_patients']
 
     # Ambil jumlah pasien dengan hasil pemeriksaan yang mengandung "Kanker Payudara"
-    cur.execute("SELECT COUNT(*) AS total_tumor_otak FROM patients WHERE hasil_pemeriksaan LIKE '%Tumor Otak%'")
-    total_tumor_otak = cur.fetchone()['total_tumor_otak']
+    cur.execute("SELECT COUNT(*) AS total_kanker_payudara FROM patients WHERE hasil_pemeriksaan LIKE '%Kanker%'")
+    total_kanker_payudara = cur.fetchone()['total_kanker_payudara']
 
-    # Ambil jumlah pasien dengan hasil pemeriksaan yang mengandung "Kanker Payudara"
-    cur.execute("SELECT COUNT(*) AS total_non_tumor_otak FROM patients WHERE hasil_pemeriksaan LIKE '%Non-Tumor Otak%'")
-    total_non_tumor_otak = cur.fetchone()['total_non_tumor_otak']
+    # Ambil jumlah pasien dengan hasil pemeriksaan yang mengandung "Non-Kanker"
+    cur.execute("SELECT COUNT(*) AS total_non_kanker_payudara FROM patients WHERE hasil_pemeriksaan LIKE '%Non-Kanker%'")
+    total_non_kanker_payudara = cur.fetchone()['total_non_kanker_payudara']
 
     # Ambil data pasien untuk ditampilkan dalam tabel
     cur.execute("SELECT * FROM patients")
@@ -181,7 +181,7 @@ def dashboard():
             admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
 
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
-                               total_tumor_otak=total_tumor_otak, total_non_tumor_otak=total_non_tumor_otak,
+                               total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
                                admin_name=admin_name, admin_profile_picture=admin_profile_picture,
                                admin_email=admin_email, patients=patients)
 
@@ -201,7 +201,7 @@ def dashboard():
             user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
 
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
-                               total_tumor_otak=total_tumor_otak, total_non_tumor_otak=total_non_tumor_otak,
+                               total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
                                user_name=user_name, user_profile_picture=user_profile_picture,
                                user_email=user_email, patients=patients)
 
@@ -233,12 +233,9 @@ def classify():
 
             # Panggil fungsi prediksi dengan gambar yang diunggah
             result, confidence, img_base64, output_img_path = predict_with_confidence(file_path, user_email)
-            
             # Simpan hasil deteksi dan confidence di database
             hasil_pemeriksaan = f"Hasil deteksi: {result}"
-
-            confidence_rounded = round(confidence, 4)
-
+            confidence_rounded = round(confidence, 3)
             db, cur = get_db()
             try:
                 cur.execute("""
@@ -253,9 +250,9 @@ def classify():
                 db.close()
 
             return render_template('classify.html', result=result, confidence=confidence_rounded,
-                                   img_base64=img_base64, user_type=user_type, name=user_name,
-                                   email=user_email, profile_picture=user_profile_picture, 
-                                   output_img_path=output_img_path)
+                                img_base64=img_base64, user_type=user_type, name=user_name,
+                                email=user_email, profile_picture=user_profile_picture, 
+                                output_img_path=output_img_path)
 
     return render_template('classify.html', user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 

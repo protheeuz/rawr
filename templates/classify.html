@@ -158,7 +158,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <!-- Form untuk Upload Gambar -->
                         <form method="POST" action="/classify" enctype="multipart/form-data">
                             <div class="row form-group">
@@ -188,13 +187,11 @@
                         <h2>Hasil Deteksi Kanker Payudara</h2>
                         <p>Berdasarkan gambar yang diunggah, hasil deteksinya adalah:</p>
                         <p>Status: {{ result }} Confidence: {{ '%.4f'|format(confidence) }}%</p>
-
                         <!-- Menampilkan gambar hasil deteksi -->
                         <h3>Hasil Deteksi Gambar:</h3>
                         <img src="data:image/png;base64,{{ img_base64 }}" alt="Hasil Deteksi" style="max-width: 100%; height: auto;">
-
-                        <!-- Tambahkan opsi untuk download gambar hasil deteksi -->
-                        <h3>Unduh Gambar Hasil Deteksi:</h3>
+                        <!-- Opsi untuk download gambar hasil deteksi -->
+                        <h3>Download Gambar di bawah: </h3>
                         <a href="{{ url_for('static', filename='assets/img/detections/' + email + '_detected_image.png') }}" download>
                             <button class="btn btn-success">Download Gambar</button>
                         </a>
