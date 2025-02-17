@@ -237,7 +237,7 @@ def dashboard():
 def classify():
     if 'logged_in' not in session:
         return redirect(url_for('auth.login'))
-
+    user_id = session.get('user_id')
     user_type = session.get('user_type')
     user_name = session.get('user_name')
     user_email = session.get('user_email')
@@ -270,9 +270,9 @@ def classify():
             db, cur = get_db()
             try:
                 cur.execute("""
-                    INSERT INTO patients (nama, hasil_pemeriksaan, confidence_score)
-                    VALUES (%s, %s, %s)
-                """, (request.form['nama'], hasil_pemeriksaan, confidence_rounded))
+                    INSERT INTO patients (nama, hasil_pemeriksaan, confidence_score, user_id, created_at)
+                    VALUES (%s, %s, %s, %s, NOW())
+                """, (request.form['nama'], hasil_pemeriksaan, confidence_rounded, user_id))
                 db.commit()
             except Exception as e:
                 logging.error(f"Error during database insertion: {e}")
