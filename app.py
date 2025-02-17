@@ -160,12 +160,6 @@ def dashboard():
         total_non_kanker_payudara = stats['total_non_kanker_payudara']
 
         cur.execute("SELECT * FROM patients WHERE user_id = %s", (user_id,))
-    
-    elif user_type == 'admin':
-        # Tetap ambil semua data untuk admin
-        cur.execute("SELECT COUNT(*) AS total_patients FROM patients")
-        # ... kode admin lainnya ...
-
 
     user_type = session.get('user_type')
     if user_type not in ['admin', 'pengunjung']:
@@ -259,10 +253,8 @@ def classify():
 
             file.save(file_path)
 
-            # Panggil fungsi prediksi dengan gambar yang diunggah
             result, confidence, img_base64, output_img_path = predict_with_confidence(file_path, user_email)
             
-            # Simpan hasil deteksi dan confidence di database
             hasil_pemeriksaan = f"Hasil deteksi: {result}"
 
             confidence_rounded = round(confidence, 4)
