@@ -137,8 +137,35 @@ def terms_condition_user():
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
     if 'logged_in' not in session:
-        logging.debug("User not logged in, redirecting to login page.")
         return redirect(url_for('auth.login'))
+
+    user_type = session.get('user_type')
+    db, cur = get_db()
+
+    if user_type == 'pengunjung':
+        user_id = session.get('user_id')
+        
+        cur.execute("""
+            SELECT 
+                COUNT(*) AS total_patients,
+                SUM(CASE WHEN hasil_pemeriksaan LIKE '%%Kanker%%' THEN 1 ELSE 0 END) AS total_kanker_payudara,
+                SUM(CASE WHEN hasil_pemeriksaan LIKE '%%Non-Kanker%%' THEN 1 ELSE 0 END) AS total_non_kanker_payudara
+            FROM patients 
+            WHERE user_id = %s
+        """, (user_id,))
+        stats = cur.fetchone()
+        
+        total_patients = stats['total_patients']
+        total_kanker_payudara = stats['total_kanker_payudara']
+        total_non_kanker_payudara = stats['total_non_kanker_payudara']
+
+        cur.execute("SELECT * FROM patients WHERE user_id = %s", (user_id,))
+    
+    elif user_type == 'admin':
+        # Tetap ambil semua data untuk admin
+        cur.execute("SELECT COUNT(*) AS total_patients FROM patients")
+        # ... kode admin lainnya ...
+
 
     user_type = session.get('user_type')
     if user_type not in ['admin', 'pengunjung']:
@@ -160,7 +187,7 @@ def dashboard():
     total_non_tumor_otak = cur.fetchone()['total_non_tumor_otak']
 
     # Ambil data pasien untuk ditampilkan dalam tabel
-    cur.execute("SELECT * FROM patients")
+    cur.execute("SELECT * FROM patients WHERE user_id = %s", (user_id,))
     patients = cur.fetchall()
 
     db.close()
@@ -170,7 +197,7 @@ def dashboard():
         admin_email = session.get('user_email')
 
         db, cur = get_db()
-        cur.execute("SELECT * FROM admins WHERE email = %s", (admin_email,))
+        cur.execute("SELECT COUNT(*) AS total_patients FROM patients")
         admin_data = cur.fetchone()
         db.close()
 
@@ -187,6 +214,7 @@ def dashboard():
 
     # Untuk pengunjung
     elif user_type == 'pengunjung':
+        user_id = session.get('user_id')
         user_email = session.get('user_email')
 
         db, cur = get_db()

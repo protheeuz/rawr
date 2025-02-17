@@ -29,7 +29,6 @@ def send_verification_code(email, verification_code):
 
     template = Template(html_template)
     html_content = template.render(verification_code=verification_code)
-
     message = SendGridMail(
         from_email='matimatech@gmail.com',
         to_emails=email,
@@ -113,7 +112,8 @@ def login():
         if user:
             if hashlib.sha256(password.encode()).hexdigest() == user['password']:
                 session['logged_in'] = True
-                session['user_type'] = user['role']  
+                session['user_id'] = user['id'] 
+                session['user_type'] = user['role']
                 session['user_email'] = email
                 session['user_name'] = user['name']
                 session['user_profile_picture'] = user.get('profile_picture')
