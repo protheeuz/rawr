@@ -135,20 +135,27 @@ def terms_condition_user():
     return render_template("terms-condition-user.html")
 
 @app.route('/dashboard', methods=['GET'])
+# Route ini menangani halaman dashboard yang hanya bisa diakses jika user sudah login.
+
 def dashboard():
     if 'logged_in' not in session:
         logging.debug("User not logged in, redirecting to login page.")
+        # Cek jika pengguna belum login, diarahkan ke halaman login.
         return redirect(url_for('auth.login'))
 
     user_type = session.get('user_type')
     user_id = session.get('user_id')
+    # Mengambil data tipe pengguna dan ID user dari sesi yang sudah tersimpan.
+
     if user_type not in ['admin', 'pengunjung']:
         flash('Anda tidak memiliki hak akses.', 'error')
+        # Jika tipe user bukan admin atau pengunjung, beri flash message dan arahkan ke login.
         return redirect(url_for('auth.login'))
 
     db, cur = get_db()
+    # Membuka koneksi ke database dan mendapatkan cursor untuk eksekusi query.
 
-    # Query untuk statistik pasien
+    # Query untuk mendapatkan statistik pasien berdasarkan ID user
     cur.execute("""
         SELECT 
             COUNT(*) AS total_patients,
@@ -158,23 +165,28 @@ def dashboard():
         WHERE user_id = %s
     """, (user_id,))
     stats = cur.fetchone()
-    
+    # Mengambil data statistik seperti total pasien, jumlah yang terdeteksi kanker payudara, dan non-kanker.
+
     total_patients = stats['total_patients']
     total_kanker_payudara = stats['total_kanker_payudara']
     total_non_kanker_payudara = stats['total_non_kanker_payudara']
+    # Menyimpan hasil query ke variabel untuk digunakan di halaman dashboard.
 
-    # Query untuk mengambil data pasien
+    # Query untuk mengambil data pasien berdasarkan user ID
     cur.execute("SELECT * FROM patients WHERE user_id = %s", (user_id,))
     patients = cur.fetchall()
+    # Mengambil semua data pasien yang terdaftar oleh user ini.
 
-    # Query untuk mengambil gambar profil user (admin atau pengunjung)
+    # Query untuk mengambil nama dan gambar profil user dari tabel users
     cur.execute("SELECT profile_picture, name FROM users WHERE id = %s", (user_id,))
     user_data = cur.fetchone()
-    
+    # Menarik data nama dan gambar profil pengguna.
+
     user_name = user_data.get('name', 'User')
     user_profile_picture = user_data.get('profile_picture', None)
-    
-    # Tentukan URL untuk gambar profil user (admin atau pengunjung)
+    # Mengambil nama user dan gambar profilnya (jika ada). Jika tidak ada, akan menggunakan 'User' sebagai fallback.
+
+    # Tentukan URL gambar profil berdasarkan tipe user (admin/pengunjung)
     if user_profile_picture:
         if user_type == 'admin':
             user_profile_picture = url_for('static', filename=f'assets/img/admins/{user_profile_picture}')
@@ -182,58 +194,79 @@ def dashboard():
             user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
     else:
         user_profile_picture = url_for('static', filename='assets/img/default-profile.jpg')
+    # Jika ada gambar profil, tentukan URL-nya berdasarkan folder yang sesuai (admin atau pengunjung). Kalau gak ada, pakai gambar default.
 
     db.close()
+    # Tutup koneksi database setelah selesai.
 
-    # Render dashboard berdasarkan tipe user
+    # Render halaman dashboard sesuai dengan tipe user (admin atau pengunjung)
     if user_type == 'admin':
         admin_email = session.get('user_email')
+        # Ambil email admin dari sesi.
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
                                user_name=user_name, user_profile_picture=user_profile_picture,
                                admin_email=admin_email, patients=patients)
+        # Jika user admin, tampilkan dashboard dengan informasi statistik dan data pasien.
 
     elif user_type == 'pengunjung':
         user_email = session.get('user_email')
+        # Ambil email pengguna pengunjung dari sesi.
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
                                user_name=user_name, user_profile_picture=user_profile_picture,
                                user_email=user_email, patients=patients)
+        # Jika user pengunjung, tampilkan dashboard yang serupa tapi dengan informasi pengguna pengunjung.
+
 
 
 @app.route('/classify', methods=['GET', 'POST'])
+# Route untuk halaman classify yang bisa menerima request GET dan POST.
 def classify():
     if 'logged_in' not in session:
         return redirect(url_for('auth.login'))
+        # Cek apakah pengguna sudah login atau belum. Kalau belum, diarahkan ke halaman login.
 
     user_type = session.get('user_type')
     user_id = session.get('user_id')
     user_name = session.get('user_name')
     user_email = session.get('user_email')
     user_profile_picture = session.get('user_profile_picture')
+    # Ambil data pengguna (tipe, id, nama, email, gambar profil) yang sudah disimpan di sesi.
 
     if request.method == 'POST':
         if 'image' not in request.files:
             flash('Tidak ada file gambar yang diunggah!', 'error')
             return redirect(request.url)
+            # Cek apakah ada gambar yang diupload, kalau gak ada, kasih pesan error dan kembali ke halaman yang sama.
 
         file = request.files['image']
         if file and allowed_file(file.filename):
+            # Cek apakah file yang diupload punya ekstensi yang diperbolehkan (PNG, JPG, JPEG).
             filename = secure_filename(file.filename)
             user_filename = f"{user_email}_{filename}"
+            # Pastikan nama file aman, dan buat nama file baru dengan menggabungkan email user supaya unik.
+
             file_path = os.path.join(app.config['UPLOAD_FOLDER_DETECTIONS'], user_filename)
+            # Tentukan lokasi penyimpanan file di server.
 
             if not os.path.exists(app.config['UPLOAD_FOLDER_DETECTIONS']):
                 os.makedirs(app.config['UPLOAD_FOLDER_DETECTIONS'])
+                # Kalau folder penyimpanan file belum ada, buat dulu foldernya.
 
             file.save(file_path)
+            # Simpan file yang diupload ke path yang sudah ditentukan.
 
-            # Panggil fungsi prediksi dengan gambar yang diunggah
+            # Panggil fungsi prediksi dengan gambar yang diupload
             result, confidence, img_base64, output_img_path = predict_with_confidence(file_path, user_email)
+            # Setelah gambar diupload, panggil fungsi prediksi untuk mendapatkan hasil deteksi dan confidence.
+
             # Simpan hasil deteksi dan confidence di database
             hasil_pemeriksaan = f"Hasil deteksi: {result}"
             confidence_rounded = round(confidence, 3)
             db, cur = get_db()
+            # Ambil koneksi ke database dan buat cursor untuk eksekusi query.
+
             try:
                 cur.execute("""
                     INSERT INTO patients (
@@ -250,39 +283,50 @@ def classify():
                     user_id
                 ))
                 db.commit()
+                # Simpan data hasil pemeriksaan ke dalam tabel patients di database.
             except Exception as e:
                 logging.error(f"Error during database insertion: {e}")
                 db.rollback()
+                # Kalau ada error saat menyimpan ke database, log error-nya dan batalkan perubahan.
+
             finally:
                 db.close()
+                # Tutup koneksi database setelah operasi selesai.
 
+            # Render halaman classify dengan hasil prediksi, confidence, gambar dalam format base64, dan gambar output.
             return render_template('classify.html', result=result, confidence=confidence_rounded,
                                 img_base64=img_base64, user_type=user_type, name=user_name,
                                 email=user_email, profile_picture=user_profile_picture, 
                                 output_img_path=output_img_path)
 
+    # Kalau request-nya GET, cuma render halaman classify tanpa data tambahan.
     return render_template('classify.html', user_type=user_type, name=user_name, email=user_email, profile_picture=user_profile_picture)
 
+
 @app.route('/user-profile-settings', methods=['GET', 'POST'])
+# Route untuk halaman pengaturan profil user, menerima request GET dan POST.
 def user_profile_settings():
     if 'logged_in' not in session:
         return redirect(url_for('auth.login'))
+        # Cek apakah user sudah login atau belum. Kalau belum, langsung arahkan ke halaman login.
 
-    # Ambil data user dari session
+    # Ambil data user yang sudah disimpan di session (email, nama, foto profil).
     user_email = session.get('user_email')
     user_name = session.get('user_name')
     user_profile_picture = session.get('user_profile_picture')
 
     if request.method == 'POST':
-        # Proses pengubahan data profil user
+        # Kalau request POST (ketika user submit form untuk ubah data profil):
         new_name = request.form.get('name')
         new_profile_picture = request.files.get('photo')
+        # Ambil nama baru dan foto baru (kalau ada).
 
-        # Proses upload foto
         if new_profile_picture:
+            # Kalau ada foto baru yang di-upload:
             filename = secure_filename(new_profile_picture.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER_USERS'], filename)
             new_profile_picture.save(filepath)
+            # Simpan foto baru dengan nama yang aman dan tempatkan di folder yang sudah diset.
 
             # Update nama file foto profil di database
             db, cur = get_db()
@@ -294,14 +338,14 @@ def user_profile_settings():
                 """, (new_name, filename, user_email))
                 db.commit()
                 flash("Profil berhasil diperbarui", "success")
-                session['user_profile_picture'] = filename  
+                session['user_profile_picture'] = filename  # Update foto profil di session
             except Exception as e:
                 db.rollback()
                 flash(f"Terjadi kesalahan: {e}", "error")
             finally:
                 db.close()
         else:
-            # Jika tidak ada foto baru, hanya update nama
+            # Kalau tidak ada foto baru, cuma update nama saja
             db, cur = get_db()
             try:
                 cur.execute("""
@@ -318,8 +362,12 @@ def user_profile_settings():
                 db.close()
 
         return redirect(url_for('user_profile_settings'))
+        # Setelah proses update selesai, reload halaman supaya perubahan bisa terlihat.
 
+    # Kalau request-nya GET (ketika pertama kali masuk ke halaman pengaturan profil):
     return render_template('user-profile-settings.html', user_name=user_name, user_email=user_email, user_profile_picture=user_profile_picture)
+    # Render halaman pengaturan profil dengan data user yang sudah ada.
+
 
 
 @app.route('/logout')
