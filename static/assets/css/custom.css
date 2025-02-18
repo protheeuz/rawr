@@ -13171,6 +13171,13 @@ call-btn:hover, call-btn:focus {
   white-space: nowrap;
   overflow: hidden;
 }
+
+.user-type-text {
+  font-size: 14px;  /* Mengurangi ukuran font */
+  font-weight: 300;  /* Membuat font lebih ringan */
+  color: #888;      /* Memberikan warna abu-abu agar lebih subtle */
+}
+
 .profile-det-info .patient-details h5 {
   color: #757575;
   font-size: 13px;

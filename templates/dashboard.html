@@ -39,11 +39,11 @@
                             <i class="fas fa-times"></i>
                         </a>
                     </div>
-                    <!-- <ul class="main-nav-header"> -->
+                    <ul class="main-nav-header">
                         {% if user_type == 'admin' %}
-                        <!-- <li> -->
-                            <!-- <a href="/admin-register">Daftar Admin Baru</a> -->
-                        <!-- </li> -->
+                        <li>
+                            <a href="/admin-register">Daftar Admin Baru</a>
+                        </li>
                         {% endif %}
                     </ul>
                 </div>
@@ -93,6 +93,7 @@
                                     <div class="profile-det-info">
                                         <h3>{{ session['user_name'] }}</h3>
                                     </div>
+                                    <h3 class="user-type-text">{{ session['user_type'] }}</h3>
                                 </div>
                             </div>
                             <div class="dashboard-widget">

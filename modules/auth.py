@@ -113,6 +113,7 @@ def login():
         if user:
             if hashlib.sha256(password.encode()).hexdigest() == user['password']:
                 session['logged_in'] = True
+                session['user_id'] = user['id']
                 session['user_type'] = user['role']  
                 session['user_email'] = email
                 session['user_name'] = user['name']

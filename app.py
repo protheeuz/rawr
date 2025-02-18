@@ -141,69 +141,65 @@ def dashboard():
         return redirect(url_for('auth.login'))
 
     user_type = session.get('user_type')
+    user_id = session.get('user_id')
     if user_type not in ['admin', 'pengunjung']:
         flash('Anda tidak memiliki hak akses.', 'error')
         return redirect(url_for('auth.login'))
 
     db, cur = get_db()
 
-    # Ambil jumlah total pasien
-    cur.execute("SELECT COUNT(*) AS total_patients FROM patients")
-    total_patients = cur.fetchone()['total_patients']
+    # Query untuk statistik pasien
+    cur.execute("""
+        SELECT 
+            COUNT(*) AS total_patients,
+            SUM(CASE WHEN hasil_pemeriksaan LIKE '%%Hasil deteksi: Kanker%%' THEN 1 ELSE 0 END) AS total_kanker_payudara,
+            SUM(CASE WHEN hasil_pemeriksaan LIKE '%%Non-Kanker%%' THEN 1 ELSE 0 END) AS total_non_kanker_payudara
+        FROM patients 
+        WHERE user_id = %s
+    """, (user_id,))
+    stats = cur.fetchone()
+    
+    total_patients = stats['total_patients']
+    total_kanker_payudara = stats['total_kanker_payudara']
+    total_non_kanker_payudara = stats['total_non_kanker_payudara']
 
-    # Ambil jumlah pasien dengan hasil pemeriksaan yang mengandung "Kanker Payudara"
-    cur.execute("SELECT COUNT(*) AS total_kanker_payudara FROM patients WHERE hasil_pemeriksaan LIKE '%Kanker%'")
-    total_kanker_payudara = cur.fetchone()['total_kanker_payudara']
-
-    # Ambil jumlah pasien dengan hasil pemeriksaan yang mengandung "Non-Kanker"
-    cur.execute("SELECT COUNT(*) AS total_non_kanker_payudara FROM patients WHERE hasil_pemeriksaan LIKE '%Non-Kanker%'")
-    total_non_kanker_payudara = cur.fetchone()['total_non_kanker_payudara']
-
-    # Ambil data pasien untuk ditampilkan dalam tabel
-    cur.execute("SELECT * FROM patients")
+    # Query untuk mengambil data pasien
+    cur.execute("SELECT * FROM patients WHERE user_id = %s", (user_id,))
     patients = cur.fetchall()
+
+    # Query untuk mengambil gambar profil user (admin atau pengunjung)
+    cur.execute("SELECT profile_picture, name FROM users WHERE id = %s", (user_id,))
+    user_data = cur.fetchone()
+    
+    user_name = user_data.get('name', 'User')
+    user_profile_picture = user_data.get('profile_picture', None)
+    
+    # Tentukan URL untuk gambar profil user (admin atau pengunjung)
+    if user_profile_picture:
+        if user_type == 'admin':
+            user_profile_picture = url_for('static', filename=f'assets/img/admins/{user_profile_picture}')
+        else:
+            user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
+    else:
+        user_profile_picture = url_for('static', filename='assets/img/default-profile.jpg')
 
     db.close()
 
-    # Untuk admin
+    # Render dashboard berdasarkan tipe user
     if user_type == 'admin':
         admin_email = session.get('user_email')
-
-        db, cur = get_db()
-        cur.execute("SELECT * FROM admins WHERE email = %s", (admin_email,))
-        admin_data = cur.fetchone()
-        db.close()
-
-        admin_name = session.get('user_name')
-        admin_profile_picture = admin_data.get('profile_picture')
-
-        if admin_profile_picture:
-            admin_profile_picture = url_for('static', filename=f'assets/img/admins/{admin_profile_picture}')
-
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
-                               admin_name=admin_name, admin_profile_picture=admin_profile_picture,
+                               user_name=user_name, user_profile_picture=user_profile_picture,
                                admin_email=admin_email, patients=patients)
 
-    # Untuk pengunjung
     elif user_type == 'pengunjung':
         user_email = session.get('user_email')
-
-        db, cur = get_db()
-        cur.execute("SELECT * FROM users WHERE email = %s", (user_email,))
-        user_data = cur.fetchone()
-        db.close()
-
-        user_name = session.get('user_name')
-        user_profile_picture = user_data.get('profile_picture')
-
-        if user_profile_picture:
-            user_profile_picture = url_for('static', filename=f'assets/img/users/{user_profile_picture}')
-
         return render_template('dashboard.html', user_type=user_type, total_patients=total_patients,
                                total_kanker_payudara=total_kanker_payudara, total_non_kanker_payudara=total_non_kanker_payudara,
                                user_name=user_name, user_profile_picture=user_profile_picture,
                                user_email=user_email, patients=patients)
+
 
 @app.route('/classify', methods=['GET', 'POST'])
 def classify():
@@ -211,6 +207,7 @@ def classify():
         return redirect(url_for('auth.login'))
 
     user_type = session.get('user_type')
+    user_id = session.get('user_id')
     user_name = session.get('user_name')
     user_email = session.get('user_email')
     user_profile_picture = session.get('user_profile_picture')
@@ -239,9 +236,19 @@ def classify():
             db, cur = get_db()
             try:
                 cur.execute("""
-                    INSERT INTO patients (nama, hasil_pemeriksaan, confidence_score)
-                    VALUES (%s, %s, %s)
-                """, (request.form['nama'], hasil_pemeriksaan, confidence_rounded))
+                    INSERT INTO patients (
+                        nama, 
+                        hasil_pemeriksaan, 
+                        confidence_score, 
+                        user_id,
+                        created_at
+                    ) VALUES (%s, %s, %s, %s, NOW())
+                """, (
+                    request.form['nama'], 
+                    hasil_pemeriksaan, 
+                    confidence_rounded, 
+                    user_id
+                ))
                 db.commit()
             except Exception as e:
                 logging.error(f"Error during database insertion: {e}")
